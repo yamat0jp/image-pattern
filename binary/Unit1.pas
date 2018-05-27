@@ -79,37 +79,31 @@ var
   j: integer;
 begin
   bmp1 := TBitmap.Create;
-  bmp2 := TBitmap.Create;
   try
     bmp1.Assign(Image1.Picture.Bitmap);
     nx := bmp1.Width;
     ny := bmp1.Height;
-    bmp2.Width := nx;
-    bmp2.Height := ny;
-    bmp2.Canvas.FloodFill(0, 0, clWhite, fsSurface);
     SetLength(f, nx, ny);
     SetLength(border, nx, ny);
     getBinaryImage(bmp1, f);
+    bmp1.Canvas.FillRect(Rect(0,0,nx,ny));
     for j := 0 to ny - 1 do
       for i := 0 to nx - 1 do
         border[i, j] := 0;
     getBorder4(nx, ny, f, border);
+    c.rgbtBlue := 0;
+    c.rgbtGreen := 0;
+    c.rgbtRed := 0;
     for j := ny - 1 downto 0 do
     begin
-      Pointer(g) := bmp2.ScanLine[j];
+      Pointer(g) := bmp1.ScanLine[j];
       for i := 0 to nx - 1 do
         if border[i, j] = 1 then
-        begin
-          c.rgbtBlue := 0;
-          c.rgbtGreen := 0;
-          c.rgbtRed := 0;
           g[i] := c;
-        end;
     end;
-    Image2.Picture.Assign(bmp2);
+    Image2.Picture.Assign(bmp1);
   finally
     bmp1.Free;
-    bmp2.Free;
   end;
   Finalize(f);
   Finalize(border);
@@ -131,7 +125,7 @@ begin
       0:
         begin
           i2 := i1;
-          j2 := j1 + 1;
+          j2 := j1 - 1;
           if f[i2, j2] = 1 then
             code := 6
           else
@@ -145,17 +139,15 @@ begin
             code := 0
           else
             code := 4;
-          break;
         end;
       4:
         begin
           i2 := i1;
-          j2 := j1 - 1;
+          j2 := j1 + 1;
           if f[i2, j2] = 1 then
             code := 2
           else
             code := 6;
-          break;
         end;
       6:
         begin
@@ -165,7 +157,6 @@ begin
             code := 4
           else
             code := 0;
-          break;
         end;
     end;
     if f[i2, j2] = 1 then
@@ -202,8 +193,8 @@ begin
     for i := 0 to wid - 1 do
     begin
       color := g[i];
-      if (color.rgbtBlue > 200) and (color.rgbtGreen > 200) and
-        (color.rgbtRed > 200) then
+      if (color.rgbtBlue > 220) and (color.rgbtGreen > 220) and
+        (color.rgbtRed > 220) then
         arr[i, j] := 0
       else
         arr[i, j] := 1;

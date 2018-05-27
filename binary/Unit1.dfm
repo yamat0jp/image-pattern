@@ -2,8 +2,8 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Form1'
-  ClientHeight = 299
-  ClientWidth = 635
+  ClientHeight = 418
+  ClientWidth = 690
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -12,13 +12,13 @@ object Form1: TForm1
   Font.Style = []
   OldCreateOrder = False
   DesignSize = (
-    635
-    299)
+    690
+    418)
   PixelsPerInch = 96
   TextHeight = 13
   object Image1: TImage
-    Left = 32
-    Top = 24
+    Left = 489
+    Top = 87
     Width = 193
     Height = 193
     Picture.Data = {
@@ -47033,15 +47033,15 @@ object Form1: TForm1
     Proportional = True
   end
   object Image2: TImage
-    Left = 248
-    Top = 24
-    Width = 209
-    Height = 193
+    Left = 0
+    Top = 0
+    Width = 449
+    Height = 417
     Anchors = [akLeft, akTop, akRight, akBottom]
     Proportional = True
   end
   object Button1: TButton
-    Left = 504
+    Left = 559
     Top = 32
     Width = 75
     Height = 25
@@ -47049,5 +47049,6 @@ object Form1: TForm1
     Caption = 'Button1'
     TabOrder = 0
     OnClick = Button1Click
+    ExplicitLeft = 504
   end
 end

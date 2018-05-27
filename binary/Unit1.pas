@@ -42,14 +42,14 @@ begin
   nx := Image1.Picture.Bitmap.Width;
   ny := Image1.Picture.Bitmap.Height;
   SetLength(f, nx, ny);
-  getBinaryImage(Image1.Picture.Bitmap, f);
-  kaisu := thinning4(nx, ny, f);
-  color.rgbtBlue := 255;
-  color.rgbtGreen := 255;
-  color.rgbtRed := 255;
   bmp := TBitmap.Create;
   try
     bmp.Assign(Image1.Picture.Bitmap);
+    getBinaryImage(bmp, f);
+    kaisu := thinning4(nx, ny, f);
+    color.rgbtBlue := 255;
+    color.rgbtGreen := 255;
+    color.rgbtRed := 255;
     for j := 0 to ny - 1 do
     begin
       Pointer(g) := bmp.ScanLine[j];

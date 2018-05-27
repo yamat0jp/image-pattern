@@ -18,9 +18,10 @@ object Form1: TForm1
   TextHeight = 13
   object Image1: TImage
     Left = 489
-    Top = 87
+    Top = 135
     Width = 193
     Height = 193
+    Anchors = [akTop, akRight]
     Picture.Data = {
       07544269746D6170D6F31600424DD6F316000000000036000000280000004A03
       0000530200000100180000000000A0F31600120B0000120B0000000000000000
@@ -47046,9 +47047,18 @@ object Form1: TForm1
     Width = 75
     Height = 25
     Anchors = [akTop, akRight]
-    Caption = 'Button1'
+    Caption = 'binary'
     TabOrder = 0
     OnClick = Button1Click
-    ExplicitLeft = 504
+  end
+  object Button2: TButton
+    Left = 559
+    Top = 72
+    Width = 75
+    Height = 25
+    Anchors = [akTop, akRight]
+    Caption = 'border'
+    TabOrder = 1
+    OnClick = Button2Click
   end
 end

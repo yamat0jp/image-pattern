@@ -25,7 +25,7 @@ type
     { Private êÈåæ }
     fsize: Integer;
     bmp: TBitmap;
-    procedure DrawRect(canvas: TCanvas; rect: TRect);
+    procedure DrawRect(Canvas: TCanvas; rect: TRect);
   public
     { Public êÈåæ }
   end;
@@ -47,7 +47,7 @@ begin
   end;
 end;
 
-procedure TForm1.DrawRect(canvas: TCanvas; rect: TRect);
+procedure TForm1.DrawRect(Canvas: TCanvas; rect: TRect);
 var
   s: array [0 .. 3] of TPoint;
 begin
@@ -55,7 +55,7 @@ begin
   s[1] := Point(rect.Left, rect.Bottom);
   s[2] := rect.BottomRight;
   s[3] := Point(rect.Right, rect.Top);
-  canvas.Polyline(s);
+  Canvas.Polyline(s);
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
@@ -97,7 +97,7 @@ begin
   if (X < s2) or (X > nx - s2) or (Y < s2) or (Y > ny - s2) then
     Exit;
   Image1.Picture.Assign(bmp);
-  Image2.Canvas.CopyRect(rect(0, 0, fsize-1, fsize-1), Image1.canvas,
+  Image2.Canvas.CopyRect(rect(0, 0, fsize - 1, fsize - 1), Image1.Canvas,
     rect(X - s2, Y - s2, X + s2 - 1, Y + s2 - 1));
   SetLength(f, nx, ny);
   SetLength(ff, fsize, fsize);
@@ -126,7 +126,7 @@ begin
           inc(rr, ff[k, l] - temp[k, l]);
         end;
       rr := rr div (fsize * fsize);
-      if rr < Abs(thTemp) then
+      if Abs(rr) < thTemp then
       begin
         xCandidate[numCandidate] := i;
         yCandidate[numCandidate] := j;
@@ -140,7 +140,7 @@ finish:
   min := rrCandidate[0];
   xMatch := xCandidate[0];
   yMatch := yCandidate[0];
-  Image1.canvas.Pen.Color := clBlack;
+  Image1.Canvas.Pen.Color := clBlack;
   for i := 0 to numCandidate - 1 do
   begin
     if min > Abs(rrCandidate[i]) then
@@ -151,10 +151,10 @@ finish:
     end;
     x1 := xCandidate[i] - s2;
     y1 := yCandidate[i] - s2;
-    DrawRect(Image1.canvas, rect(x1, y1, x1 + fsize, y1 + fsize));
+    DrawRect(Image1.Canvas, rect(x1, y1, x1 + fsize, y1 + fsize));
   end;
-  Image1.canvas.Pen.Color := clRed;
-  DrawRect(Image1.canvas, rect(xMatch - s2, yMatch - s2, xMatch + s2,
+  Image1.Canvas.Pen.Color := clRed;
+  DrawRect(Image1.Canvas, rect(xMatch - s2, yMatch - s2, xMatch + s2,
     yMatch + s2));
   Caption := 'rrCandidate = ' + IntToStr(min);
   Finalize(f);

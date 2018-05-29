@@ -4,8 +4,8 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
-  System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls;
+  System.Classes, Vcl.Graphics, Vcl.Imaging.Jpeg,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ExtDlgs;
 
 type
   TRawImg = array of array of integer;
@@ -15,8 +15,10 @@ type
     Button1: TButton;
     Image2: TImage;
     Button2: TButton;
+    OpenPictureDialog1: TOpenPictureDialog;
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
+    procedure Image1Click(Sender: TObject);
   private
     { Private êÈåæ }
     function thinning4(nx, ny: integer; img: TRawImg): integer;
@@ -125,7 +127,7 @@ begin
       0:
         begin
           i2 := i1;
-          j2 := j1 - 1;
+          j2 := j1 + 1;
           if f[i2, j2] = 1 then
             code := 6
           else
@@ -143,7 +145,7 @@ begin
       4:
         begin
           i2 := i1;
-          j2 := j1 + 1;
+          j2 := j1 - 1;
           if f[i2, j2] = 1 then
             code := 2
           else
@@ -206,8 +208,8 @@ procedure TForm1.getBorder4(nx, ny: integer; f, border: TRawImg);
 var
   i, j, code: integer;
 begin
-  for j := 0 to ny - 1 do
-    for i := 0 to nx - 1 do
+  for j := 1 to ny - 2 do
+    for i := 1 to nx - 2 do
       if (f[i, j] = 1) and (border[i, j] = 0) then
         if f[i - 1, j] = 0 then
         begin
@@ -219,6 +221,23 @@ begin
           code := 4;
           chase4(i, j, code, f, border);
         end;
+end;
+
+procedure TForm1.Image1Click(Sender: TObject);
+var
+  bmp: TBitmap;
+begin
+  if OpenPictureDialog1.Execute = true then
+  begin
+    Image1.Picture.LoadFromFile(OpenPictureDialog1.FileName);
+    bmp:=TBitmap.Create;
+    try
+      bmp.Assign(Image1.Picture.Graphic);
+      Image1.Picture.Assign(bmp);
+    finally
+      bmp.Free;
+    end;
+  end;
 end;
 
 function TForm1.thinning4(nx, ny: integer; img: TRawImg): integer;

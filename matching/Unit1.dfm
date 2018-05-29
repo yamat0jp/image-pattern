@@ -1,9 +1,10 @@
 object Form1: TForm1
   Left = 0
   Top = 0
+  Anchors = [akLeft, akTop, akRight, akBottom]
   Caption = 'Form1'
-  ClientHeight = 418
-  ClientWidth = 690
+  ClientHeight = 593
+  ClientWidth = 853
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -11,17 +12,15 @@ object Form1: TForm1
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
-  DesignSize = (
-    690
-    418)
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
   object Image1: TImage
-    Left = 489
-    Top = 135
-    Width = 193
-    Height = 193
-    Anchors = [akTop, akRight]
+    Left = 0
+    Top = -8
+    Width = 633
+    Height = 601
     Picture.Data = {
       07544269746D6170D6F31600424DD6F316000000000036000000280000004A03
       0000530200000100180000000000A0F31600120B0000120B0000000000000000
@@ -47031,39 +47030,43 @@ object Form1: TForm1
       FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
       FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
       0000}
-    Proportional = True
-    OnClick = Image1Click
+    OnMouseDown = Image1MouseDown
   end
   object Image2: TImage
-    Left = 0
-    Top = 0
-    Width = 449
-    Height = 417
-    Anchors = [akLeft, akTop, akRight, akBottom]
-    Proportional = True
+    Left = 736
+    Top = 80
+    Width = 40
+    Height = 40
   end
   object Button1: TButton
-    Left = 559
-    Top = 32
+    Left = 736
+    Top = 41
     Width = 75
     Height = 25
-    Anchors = [akTop, akRight]
-    Caption = 'binary'
+    Caption = 'Button1'
     TabOrder = 0
     OnClick = Button1Click
   end
-  object Button2: TButton
-    Left = 559
-    Top = 72
-    Width = 75
-    Height = 25
-    Anchors = [akTop, akRight]
-    Caption = 'border'
+  object Edit1: TEdit
+    Left = 736
+    Top = 256
+    Width = 40
+    Height = 21
     TabOrder = 1
-    OnClick = Button2Click
+    Text = '3'
+  end
+  object UpDown1: TUpDown
+    Left = 776
+    Top = 256
+    Width = 16
+    Height = 21
+    Associate = Edit1
+    Increment = 5
+    Position = 3
+    TabOrder = 2
   end
   object OpenPictureDialog1: TOpenPictureDialog
-    Left = 336
-    Top = 216
+    Left = 744
+    Top = 168
   end
 end

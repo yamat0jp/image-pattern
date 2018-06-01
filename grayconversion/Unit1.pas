@@ -15,6 +15,9 @@ type
     Image2: TImage;
     OpenPictureDialog1: TOpenPictureDialog;
     Button2: TButton;
+    PaintBox1: TPaintBox;
+    RadioButton1: TRadioButton;
+    RadioButton2: TRadioButton;
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -46,7 +49,7 @@ var
   nx, ny, i, j, k, small, big: integer;
   kk: Byte;
   ss, mean: integer;
-  hist: array [0 .. GMAX] of integer;
+  hist, buffer: array [0 .. GMAX] of integer;
   nmove, cnt: array [0 .. GMAX, 0 .. GMAX] of integer;
   col: TRGBTriple;
   p: array of TRGBTriple;
@@ -68,6 +71,7 @@ begin
       inc(hist[k]);
     end;
   end;
+  buffer := hist;
   for i := 0 to GMAX do
     for j := 0 to GMAX do
     begin
@@ -148,6 +152,16 @@ begin
     end;
   end;
   Image2.Picture.Bitmap.Assign(bmp);
+  PaintBox1.Canvas.Rectangle(0, 0, PaintBox1.Width, PaintBox1.Height);
+  for i := 0 to GMAX do
+    with PaintBox1 do
+    begin
+      Canvas.MoveTo(i, Height);
+      if RadioButton1.Checked = true then
+        Canvas.LineTo(i, buffer[i])
+      else
+        Canvas.LineTo(i, Height - hist[i]);
+    end;
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);

@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Form1'
-  ClientHeight = 299
+  ClientHeight = 461
   ClientWidth = 635
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -15,7 +15,7 @@ object Form1: TForm1
   OnDestroy = FormDestroy
   DesignSize = (
     635
-    299)
+    461)
   PixelsPerInch = 96
   TextHeight = 13
   object Image1: TImage
@@ -2087,6 +2087,12 @@ object Form1: TForm1
     Proportional = True
     Stretch = True
   end
+  object PaintBox1: TPaintBox
+    Left = 88
+    Top = 280
+    Width = 256
+    Height = 150
+  end
   object Button1: TButton
     Left = 528
     Top = 32
@@ -2106,6 +2112,24 @@ object Form1: TForm1
     Caption = 'Button2'
     TabOrder = 1
     OnClick = Button2Click
+  end
+  object RadioButton1: TRadioButton
+    Left = 424
+    Top = 281
+    Width = 113
+    Height = 17
+    Caption = #20803#30011#20687
+    Checked = True
+    TabOrder = 2
+    TabStop = True
+  end
+  object RadioButton2: TRadioButton
+    Left = 432
+    Top = 304
+    Width = 113
+    Height = 17
+    Caption = #22793#25563#30011#20687
+    TabOrder = 3
   end
   object OpenPictureDialog1: TOpenPictureDialog
     Left = 536

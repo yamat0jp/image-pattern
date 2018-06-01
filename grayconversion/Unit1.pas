@@ -40,31 +40,32 @@ begin
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
-type
-  TTripleArray = array [WORD] of TRGBTriple;
 const
   GMAX = 255;
 var
-  nx, ny, i, j, k, k1: integer;
+  nx, ny, i, j, k, small, big: integer;
+  kk: Byte;
   ss, mean: integer;
   hist: array [0 .. GMAX] of integer;
   nmove, cnt: array [0 .. GMAX, 0 .. GMAX] of integer;
   col: TRGBTriple;
-  p: ^TTripleArray;
+  p: array of TRGBTriple;
 begin
   bmp.Assign(Image1.Picture.Graphic);
+  bmp.PixelFormat := pf24bit;
   nx := bmp.Width - 1;
   ny := bmp.Height - 1;
-  mean := nx * ny div (GMAX + 1);
+  mean := (nx * ny) div (GMAX + 1);
   for i := 0 to High(hist) do
     hist[i] := 0;
   for j := 0 to ny do
   begin
-    p := bmp.ScanLine[j];
+    Pointer(p) := bmp.ScanLine[j];
     for i := 0 to nx do
     begin
       col := p[i];
-      inc(hist[col.rgbtRed]);
+      k := (col.rgbtBlue + col.rgbtGreen + col.rgbtRed) div 3;
+      inc(hist[k]);
     end;
   end;
   for i := 0 to GMAX do
@@ -74,27 +75,27 @@ begin
       nmove[i, i] := hist[i];
     end;
   for i := 0 to GMAX do
-    if hist[i] > mean then
+    if hist[i] >= mean then
     begin
       ss := nmove[0, i];
-      for j := i to GMAX do
+      for small := 0 to i do
       begin
         if ss < mean then
-          inc(ss, nmove[j + 1, i])
+          inc(ss, nmove[small + 1, i])
         else
         begin
-          nmove[j, i + 1] := ss - mean;
-          nmove[j, i] := nmove[j, i] - nmove[j, i + 1];
-          dec(hist[j], nmove[j, i + 1]);
-          inc(hist[i + 1], nmove[j, i + 1]);
-          if i <> j then
+          nmove[small, i + 1] := ss - mean;
+          nmove[small, i] := nmove[small, i] - nmove[small, i + 1];
+          dec(hist[i], nmove[small, i + 1]);
+          inc(hist[i + 1], nmove[small, i + 1]);
+          if i <> small then
           begin
-            for k := j + 1 to i do
+            for k := small + 1 to i do
             begin
-              nmove[j, k + 1] := nmove[j, k];
-              inc(hist[k + 1], nmove[j, k]);
-              dec(hist[k], nmove[j, k]);
-              nmove[j, k] := 0;
+              nmove[k, i + 1] := nmove[k, i];
+              inc(hist[i + 1], nmove[k, i]);
+              dec(hist[i], nmove[k, i]);
+              nmove[k, i] := 0;
             end;
           end;
           break;
@@ -104,22 +105,22 @@ begin
     else
     begin
       ss := hist[i];
-      for j := i + 1 to GMAX do
+      for big := i + 1 to GMAX do
       begin
-        inc(ss, hist[j]);
+        inc(ss, hist[big]);
         if ss <= mean then
         begin
-          nmove[j, i] := hist[j];
-          inc(hist[i], hist[j]);
-          nmove[j, j] := 0;
-          hist[j] := 0;
+          nmove[big, i] := hist[big];
+          inc(hist[i], hist[big]);
+          nmove[big, big] := 0;
+          hist[big] := 0;
         end
         else
         begin
-          nmove[j, i] := hist[j] - mean;
-          inc(hist[i], nmove[j, i]);
-          dec(nmove[j, j], nmove[j, i]);
-          hist[j] := mean;
+          nmove[big, i] := mean - hist[big];
+          inc(hist[i], nmove[big, i]);
+          dec(nmove[big, big], nmove[big, i]);
+          dec(hist[big], nmove[big, i]);
           break;
         end;
       end;
@@ -129,22 +130,21 @@ begin
       cnt[i, j] := 0;
   for j := 0 to ny do
   begin
-    p := bmp.ScanLine[j];
+    Pointer(p) := bmp.ScanLine[j];
     for i := 0 to nx do
     begin
       col := p[i];
-      col.rgbtBlue := col.rgbtRed;
-      col.rgbtGreen := col.rgbtRed;
+      kk := (col.rgbtRed + col.rgbtGreen + col.rgbtRed) div 3;
       for k := 0 to GMAX do
-      begin
-        if cnt[col.rgbtRed, k] < nmove[col.rgbtRed, k] then
-          break;
-        if k <= GMAX then
+        if cnt[kk, k] < nmove[kk, k] then
         begin
+          col.rgbtBlue := k;
+          col.rgbtGreen := k;
+          col.rgbtRed := k;
           p[i] := col;
-          inc(cnt[col.rgbtRed, k]);
+          inc(cnt[kk, k]);
+          break;
         end;
-      end;
     end;
   end;
   Image2.Picture.Bitmap.Assign(bmp);

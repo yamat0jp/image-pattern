@@ -2092,6 +2092,7 @@ object Form1: TForm1
     Top = 280
     Width = 256
     Height = 150
+    Anchors = [akLeft, akBottom]
   end
   object Button1: TButton
     Left = 528
@@ -2118,18 +2119,22 @@ object Form1: TForm1
     Top = 281
     Width = 113
     Height = 17
+    Anchors = [akLeft, akBottom]
     Caption = #20803#30011#20687
     Checked = True
     TabOrder = 2
     TabStop = True
+    OnClick = RadioButton1Click
   end
   object RadioButton2: TRadioButton
     Left = 432
     Top = 304
     Width = 113
     Height = 17
+    Anchors = [akLeft, akBottom]
     Caption = #22793#25563#30011#20687
     TabOrder = 3
+    OnClick = RadioButton1Click
   end
   object OpenPictureDialog1: TOpenPictureDialog
     Left = 536

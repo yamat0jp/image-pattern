@@ -22,9 +22,13 @@ type
     procedure Button2Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure RadioButton1Click(Sender: TObject);
+  const
+    GMAX = 255;
   private
-    { Private êÈåæ }
+  { Private êÈåæ }
     bmp: TBitmap;
+    hist, buffer: array [0 .. GMAX] of integer;
   public
     { Public êÈåæ }
   end;
@@ -43,13 +47,9 @@ begin
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
-const
-  GMAX = 255;
 var
-  nx, ny, i, j, k, small, big: integer;
-  kk: Byte;
+  nx, ny, i, j, k, small, big, kk: integer;
   ss, mean: integer;
-  hist, buffer: array [0 .. GMAX] of integer;
   nmove, cnt: array [0 .. GMAX, 0 .. GMAX] of integer;
   col: TRGBTriple;
   p: array of TRGBTriple;
@@ -67,8 +67,8 @@ begin
     for i := 0 to nx do
     begin
       col := p[i];
-      k := (col.rgbtBlue + col.rgbtGreen + col.rgbtRed) div 3;
-      inc(hist[k]);
+      kk := (col.rgbtBlue + col.rgbtGreen + col.rgbtRed) div 3;
+      inc(hist[kk]);
     end;
   end;
   buffer := hist;
@@ -132,13 +132,13 @@ begin
   for i := 0 to GMAX do
     for j := 0 to GMAX do
       cnt[i, j] := 0;
-  for j := 0 to ny do
+  for j := ny downto 0 do
   begin
     Pointer(p) := bmp.ScanLine[j];
     for i := 0 to nx do
     begin
       col := p[i];
-      kk := (col.rgbtRed + col.rgbtGreen + col.rgbtRed) div 3;
+      kk := (col.rgbtBlue + col.rgbtGreen + col.rgbtRed) div 3;
       for k := 0 to GMAX do
         if cnt[kk, k] < nmove[kk, k] then
         begin
@@ -151,17 +151,8 @@ begin
         end;
     end;
   end;
-  Image2.Picture.Bitmap.Assign(bmp);
-  PaintBox1.Canvas.Rectangle(0, 0, PaintBox1.Width, PaintBox1.Height);
-  for i := 0 to GMAX do
-    with PaintBox1 do
-    begin
-      Canvas.MoveTo(i, Height);
-      if RadioButton1.Checked = true then
-        Canvas.LineTo(i, buffer[i])
-      else
-        Canvas.LineTo(i, Height - hist[i]);
-    end;
+  Image2.Picture.Assign(bmp);
+ // RadioButton1Click(Sender);
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
@@ -172,6 +163,22 @@ end;
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   bmp.Free;
+end;
+
+procedure TForm1.RadioButton1Click(Sender: TObject);
+var
+  i: integer;
+begin
+  PaintBox1.Canvas.Rectangle(0, 0, PaintBox1.Width, PaintBox1.Height);
+  for i := 0 to GMAX do
+    with PaintBox1 do
+    begin
+      Canvas.MoveTo(i, Height);
+      if RadioButton1.Checked = true then
+        Canvas.LineTo(i, buffer[i])
+      else
+        Canvas.LineTo(i, Height - hist[i]);
+    end;
 end;
 
 end.

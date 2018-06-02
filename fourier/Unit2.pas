@@ -111,7 +111,7 @@ begin
         increment;
         continue;
       end;
-      if f[i - 1, j] = 1 then
+      if f[i - 1, j] = 0 then
       begin
         if result >= MAX_RECT - 1 then
           break;
@@ -145,26 +145,21 @@ function TPreProcess.labelborder8(nx, ny, X, Y, code, cnt: integer;
 const
   edge = 10;
 var
-  i1, i2, j1, j2, code0: integer;
-  start: Boolean;
+  i1, i2, j1, j2: integer;
 begin
-  code0 := code;
-  start:=false;
   i1 := X;
   j1 := Y;
   i2 := 0;
   j2 := 0;
   while (i2 <> X) or (j2 <> Y) do
   begin
-
-
     case code of
       0:
         begin
           i2 := i1;
           j2 := j1 + 1;
           if f[i2, j2] = 1 then
-            code := 6
+            code := 7
           else
             code := 1;
         end;
@@ -173,7 +168,7 @@ begin
           i2 := i1 + 1;
           j2 := j1 + 1;
           if f[i2, j2] = 1 then
-            code := 7
+            code := 0
           else
             code := 2;
         end;
@@ -182,7 +177,7 @@ begin
           i2 := i1 + 1;
           j2 := j1;
           if f[i2, j2] = 1 then
-            code := 0
+            code := 1
           else
             code := 3;
         end;
@@ -191,7 +186,7 @@ begin
           i2 := i1 + 1;
           j2 := j1 - 1;
           if f[i2, j2] = 1 then
-            code := 1
+            code := 2
           else
             code := 4;
         end;
@@ -200,7 +195,7 @@ begin
           i2 := i1;
           j2 := j1 - 1;
           if f[i2, j2] = 1 then
-            code := 2
+            code := 3
           else
             code := 5;
         end;
@@ -209,7 +204,7 @@ begin
           i2 := i1 - 1;
           j2 := j1 - 1;
           if f[i2, j2] = 1 then
-            code := 3
+            code := 4
           else
             code := 6;
         end;
@@ -218,7 +213,7 @@ begin
           i2 := i1 - 1;
           j2 := j1;
           if f[i2, j2] = 1 then
-            code := 4
+            code := 5
           else
             code := 7;
         end;
@@ -227,7 +222,7 @@ begin
           i2 := i1 - 1;
           j2 := j1 + 1;
           if f[i2, j2] = 1 then
-            code := 5
+            code := 6
           else
             code := 0;
         end;
@@ -250,7 +245,6 @@ begin
         ar[cnt].Bottom := j2 + 1;
       i1 := i2;
       j1 := j2;
-      start:=true;
     end;
   end;
   result := not((ar[cnt].Width < minWidth) or (ar[cnt].Height < minHeight));

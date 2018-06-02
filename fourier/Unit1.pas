@@ -9,7 +9,7 @@ uses
   FMX.Gestures, FMX.Graphics,
   FMX.TabControl, FMX.StdCtrls, System.Actions, FMX.ActnList, FMX.StdActns,
   FMX.MediaLibrary.Actions, FMX.Objects, FMX.Controls.Presentation, FMX.Edit,
-  FMX.Media;
+  FMX.Media, Unit2;
 
 type
   TForm1 = class(TForm)
@@ -44,7 +44,6 @@ type
     Panel1: TPanel;
     SpinEditButton1: TSpinEditButton;
     SpinEditButton2: TSpinEditButton;
-    EditButton1: TEditButton;
     SpinEditButton3: TSpinEditButton;
     GroupBox1: TGroupBox;
     Button1: TButton;
@@ -52,7 +51,6 @@ type
     Button4: TButton;
     Label7: TLabel;
     Image2: TImage;
-    Button5: TButton;
     procedure ToolbarCloseButtonClick(Sender: TObject);
     procedure FormGesture(Sender: TObject; const EventInfo: TGestureEventInfo;
       var Handled: Boolean);
@@ -67,12 +65,16 @@ type
     procedure Button3Click(Sender: TObject);
     procedure Image1MouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Single);
-    procedure Button5Click(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
   private
     FGestureOrigin: TPointF;
     FGestureInProgress: Boolean;
     bmp: TBitmap;
+    buf: TBitmap;
+    cap: Boolean;
+    obj: TPreProcess;
+    farr: TBinary;
+    numRect: integer;
     { private êÈåæ }
     procedure ShowToolbar(AShow: Boolean);
     procedure detectImage;
@@ -86,11 +88,6 @@ var
 implementation
 
 {$R *.fmx}
-
-uses Unit2;
-
-var
-  farr: TBinary;
 
 procedure TForm1.FormKeyDown(Sender: TObject; var Key: Word; var KeyChar: Char;
   Shift: TShiftState);
@@ -130,14 +127,13 @@ end;
 procedure TForm1.Button1Click(Sender: TObject);
 begin
   CameraComponent1.Active := true;
+  cap := true;
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
 begin
   CameraComponent1.Active := false;
-  bmp.Assign(Image1.Bitmap);
-  Initialize(farr);
-  SetLength(farr,bmp.Width,bmp.Height);
+  detectImage;
 end;
 
 procedure TForm1.Button3Click(Sender: TObject);
@@ -159,12 +155,6 @@ begin
   TabControl1.TabIndex := 2;
 end;
 
-procedure TForm1.Button5Click(Sender: TObject);
-begin
-  BinaryGray(bmp, 77, farr, true);
-  Image1.Bitmap.Assign(bmp);
-end;
-
 procedure TForm1.CameraComponent1SampleBufferReady(Sender: TObject;
   const ATime: Int64);
 begin
@@ -172,17 +162,42 @@ begin
 end;
 
 procedure TForm1.detectImage;
+var
+  thBinary: integer;
 begin
+  if cap = true then
+  begin
+    bmp.Assign(Image1.Bitmap);
+    buf.Assign(bmp);
+  end
+  else
+    bmp.Assign(buf);
+  cap := false;
+  buf.Assign(bmp);
+  Initialize(farr);
+  SetLength(farr, bmp.Width, bmp.Height);
+  thBinary := Edit3.Text.ToInteger;
+  obj.minWidth := Edit1.Text.ToInteger;
+  obj.minHeight := Edit2.Text.ToInteger;
+  obj.BinaryGray(bmp, thBinary, farr, true);
+  numRect := obj.DetectArea(bmp, farr);
+  obj.sortingPos(numRect);
+  Image1.Bitmap.Assign(bmp);
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   bmp := TBitmap.Create;
+  buf := TBitmap.Create;
+  cap := not Image1.Bitmap.IsEmpty;
+  obj := TPreProcess.Create;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   bmp.Free;
+  buf.Free;
+  obj.Free;
   Finalize(farr);
 end;
 

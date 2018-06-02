@@ -51,6 +51,7 @@ type
     Button4: TButton;
     Label7: TLabel;
     Image2: TImage;
+    Button5: TButton;
     procedure ToolbarCloseButtonClick(Sender: TObject);
     procedure FormGesture(Sender: TObject; const EventInfo: TGestureEventInfo;
       var Handled: Boolean);
@@ -58,14 +59,14 @@ type
       Shift: TShiftState);
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
-    procedure CameraComponent1SampleBufferReady(Sender: TObject;
-      const ATime: Int64);
     procedure Button4Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    procedure Button3Click(Sender: TObject);
     procedure Image1MouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Single);
     procedure FormDestroy(Sender: TObject);
+    procedure Button5Click(Sender: TObject);
+    procedure CameraComponent1SampleBufferReady(Sender: TObject;
+      const ATime: Int64);
   private
     FGestureOrigin: TPointF;
     FGestureInProgress: Boolean;
@@ -99,17 +100,19 @@ end;
 procedure TForm1.Image1MouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Single);
 var
-  s: TBitmap;
+  r: TRectF;
+  i: integer;
 begin
   case TabControl1.TabIndex of
     0:
+      for i := 0 to obj.MAX_RECT - 1 do
       begin
-        s := TBitmap.Create;
-        try
-          Image2.Bitmap.Assign(s);
-        finally
-          s.Free;
-        end;
+        r := RectF(obj.ar[i].Left, obj.ar[i].Top, obj.ar[i].right,
+          obj.ar[i].bottom);
+        if (X > r.Left) and (X < r.right) and (Y > r.Top) and (Y < r.bottom)
+        then
+          Image2.Canvas.DrawBitmap(Image1.Bitmap, r,
+            RectF(0, 0, Image2.Width, Image2.Height), 1.0);
       end;
     2:
       begin
@@ -136,23 +139,18 @@ begin
   detectImage;
 end;
 
-procedure TForm1.Button3Click(Sender: TObject);
-var
-  i: integer;
-  s: string;
-begin
-  i := 0;
-  while FileExists(Edit1.Text + s) = true do
-  begin
-    inc(i);
-    s := i.ToString + '.bmp';
-  end;
-  Image2.Bitmap.SaveToFile(Edit1.Text + '.bmp');
-end;
-
 procedure TForm1.Button4Click(Sender: TObject);
 begin
   TabControl1.TabIndex := 2;
+end;
+
+procedure TForm1.Button5Click(Sender: TObject);
+var
+  r1, r2: TRectF;
+begin
+  r1:= RectF(0,0,Image2.Width,Image2.Height);
+  r2.TopLeft:=PointF(300,300);
+  Image1.Canvas.DrawBitmap(Image1.Bitmap,r1,r2,1);
 end;
 
 procedure TForm1.CameraComponent1SampleBufferReady(Sender: TObject;

@@ -105,15 +105,18 @@ var
 begin
   case TabControl1.TabIndex of
     0:
+    begin
+      Image2.Canvas.BeginScene;
       for i := 0 to obj.MAX_RECT - 1 do
       begin
         r := RectF(obj.ar[i].Left, obj.ar[i].Top, obj.ar[i].right,
           obj.ar[i].bottom);
         if (X > r.Left) and (X < r.right) and (Y > r.Top) and (Y < r.bottom)
         then
-          Image2.Canvas.DrawBitmap(Image1.Bitmap, r,
-            RectF(0, 0, Image2.Width, Image2.Height), 1.0);
+          Image2.Canvas.DrawBitmap(Image1.Bitmap, r, Image2.BoundsRect, 1.0);
       end;
+      Image2.Canvas.EndScene;
+    end;
     2:
       begin
         if RadioButton1.IsChecked = true then

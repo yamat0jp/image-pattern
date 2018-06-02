@@ -14,7 +14,7 @@ type
 
   TPreProcess = class
   const
-    MAX_RECT = 10;
+    MAX_RECT = 50;
   private
     function labelborder8(nx, ny, X, Y, code, cnt: integer;
       f, id: TBinary): Boolean;
@@ -130,12 +130,16 @@ begin
     end;
     increment;
   end;
-  bmp.Canvas.Stroke.color := TAlphaColors.Blue;
-  bmp.Canvas.StrokeThickness := 3;
-  for i := 0 to MAX_RECT - 1 do
-    bmp.Canvas.DrawPolygon([PointF(ar[i].Left, ar[i].Top), PointF(ar[i].Left,
-      ar[i].Bottom), PointF(ar[i].Right, ar[i].Bottom), PointF(ar[i].Right,
-      ar[i].Top)], 1);
+  with bmp.Canvas do
+  begin
+    Stroke.color := TAlphaColors.Blue;
+    StrokeThickness := 3;
+    BeginScene;
+    for i := 0 to MAX_RECT - 1 do
+      bmp.Canvas.DrawRect(RectF(ar[i].Left, ar[i].Top, ar[i].Right,
+        ar[i].Bottom), 0, 0, [], 1.0);
+    EndScene;
+  end;
   Finalize(id);
 end;
 
@@ -234,13 +238,13 @@ begin
     if f[i2, j2] = 1 then
     begin
       id[i2, j2] := 1;
-      if i2 < ar[cnt].Left + 1 then
+      if i2 < ar[cnt].Left - 1 then
         ar[cnt].Left := i2 - 1
-      else if i2 > ar[cnt].Right - 1 then
+      else if i2 > ar[cnt].Right + 1 then
         ar[cnt].Right := i2 + 1;
-      if j2 < ar[cnt].Top + 1 then
+      if j2 < ar[cnt].Top - 1 then
         ar[cnt].Top := j2 - 1
-      else if j2 > ar[j2].Bottom - 1 then
+      else if j2 > ar[cnt].Bottom + 1 then
         ar[cnt].Bottom := j2 + 1;
       i1 := i2;
       j1 := j2;

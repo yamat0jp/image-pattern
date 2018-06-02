@@ -115,27 +115,26 @@ begin
       begin
         if result >= MAX_RECT - 1 then
           break;
-        ar[result].Left := 1000;
-        ar[result].Right := 0;
-        ar[result].Top := 1000;
-        ar[result].Bottom := 0;
+        ar[result].TopLeft := Point(i - 1, j - 1);
+        ar[result].Width := 3;
+        ar[result].Height := 3;
         code := 7;
-        if labelborder8(nx, ny, i, j, code, cnt, f, id) = true then
+        if labelborder8(nx, ny, i, j, code, result, f, id) = true then
           inc(result);
       end
       else if f[i + 1, j] = 0 then
       begin
         code := 3;
-        labelborder8(nx, ny, i, j, code, cnt, f, id);
+        labelborder8(nx, ny, i, j, code, result, f, id);
       end;
     end;
     increment;
   end;
   bmp.Canvas.Stroke.color := TAlphaColors.Blue;
-  bmp.Canvas.StrokeThickness := 1;
+  bmp.Canvas.StrokeThickness := 3;
   for i := 0 to MAX_RECT - 1 do
-    bmp.Canvas.DrawPolygon([TRectF(ar[i]).TopLeft, PointF(ar[i].Left,
-      ar[i].Bottom), TRectF(ar[i]).BottomRight, PointF(ar[i].Right,
+    bmp.Canvas.DrawPolygon([PointF(ar[i].Left, ar[i].Top), PointF(ar[i].Left,
+      ar[i].Bottom), PointF(ar[i].Right, ar[i].Bottom), PointF(ar[i].Right,
       ar[i].Top)], 1);
   Finalize(id);
 end;
@@ -245,6 +244,11 @@ begin
         ar[cnt].Bottom := j2 + 1;
       i1 := i2;
       j1 := j2;
+    end
+    else
+    begin
+      i2 := i1;
+      j2 := j1;
     end;
   end;
   result := not((ar[cnt].Width < minWidth) or (ar[cnt].Height < minHeight));

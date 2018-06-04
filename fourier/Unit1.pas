@@ -9,7 +9,7 @@ uses
   FMX.Gestures, FMX.Graphics,
   FMX.TabControl, FMX.StdCtrls, System.Actions, FMX.ActnList, FMX.StdActns,
   FMX.MediaLibrary.Actions, FMX.Objects, FMX.Controls.Presentation, FMX.Edit,
-  FMX.Media, Unit2;
+  FMX.Media, Unit2, Math;
 
 type
   TForm1 = class(TForm)
@@ -51,7 +51,7 @@ type
     Button4: TButton;
     Label7: TLabel;
     Image2: TImage;
-    Button5: TButton;
+    Image3: TImage;
     procedure ToolbarCloseButtonClick(Sender: TObject);
     procedure FormGesture(Sender: TObject; const EventInfo: TGestureEventInfo;
       var Handled: Boolean);
@@ -64,7 +64,6 @@ type
     procedure Image1MouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Single);
     procedure FormDestroy(Sender: TObject);
-    procedure Button5Click(Sender: TObject);
     procedure CameraComponent1SampleBufferReady(Sender: TObject;
       const ATime: Int64);
   private
@@ -76,9 +75,13 @@ type
     obj: TPreProcess;
     farr: TBinary;
     numRect: integer;
+    numDescriptor: integer;
+    numEntry: integer;
+    Fourier: TFourier;
     { private éŒ¾ }
     procedure ShowToolbar(AShow: Boolean);
     procedure detectImage;
+    procedure recognition;
   public
     { public éŒ¾ }
   end;
@@ -100,28 +103,155 @@ end;
 procedure TForm1.Image1MouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Single);
 var
-  r: TRectF;
+  r, rr: TRectF;
   i: integer;
+  cnt: integer;
+  j: integer;
+  a, b: array of Double;
 begin
   case TabControl1.TabIndex of
     0:
-    begin
-      Image2.Canvas.BeginScene;
-      for i := 0 to obj.MAX_RECT - 1 do
+      if Image2.Canvas.BeginScene = true then
       begin
-        r := RectF(obj.ar[i].Left, obj.ar[i].Top, obj.ar[i].right,
-          obj.ar[i].bottom);
-        if (X > r.Left) and (X < r.right) and (Y > r.Top) and (Y < r.bottom)
-        then
-          Image2.Canvas.DrawBitmap(Image1.Bitmap, r, Image2.BoundsRect, 1.0);
+        for i := 0 to obj.MAX_RECT - 1 do
+        begin
+          r := RectF(obj.ar[i].Left, obj.ar[i].Top, obj.ar[i].Right,
+            obj.ar[i].Bottom);
+          if (X > r.Left) and (X < r.Right) and (Y > r.Top) and (Y < r.Bottom)
+          then
+          begin
+            if r.Width < r.Height then
+            begin
+              rr.Height := r.Height;
+              rr.Width := r.Width * rr.Height / r.Height;
+            end
+            else
+            begin
+              rr.Width := r.Width;
+              rr.Height := r.Height * rr.Width / r.Width;
+            end;
+            rr.Left := (Image2.Width - rr.Width) / 2;
+            rr.Top := (Image2.Height - rr.Height) / 2;
+            Image2.Canvas.FillRect(Image2.BoundsRect, 0, 0, [], 1.0);
+            Image2.Canvas.DrawBitmap(Image1.Bitmap, r, rr, 1.0);
+          end;
+        end;
+        Image2.Canvas.EndScene;
       end;
-      Image2.Canvas.EndScene;
-    end;
     2:
+      recognition;
+  end;
+end;
+
+procedure TForm1.recognition;
+var
+  dist: Double;
+  i: integer;
+  id: array of integer;
+  a, b: array of Double;
+  estima: array of Double;
+  X, Y, wr, wi: array [0 .. TFourier.MAX_POINT] of Double;
+  n, cnt: integer;
+  test: TModel;
+  j: integer;
+  fr, fi, cc, ss: Double;
+  bnd: TBoundary;
+begin
+  SetLength(a, 4 * Fourier.numDescriptor);
+  SetLength(b, 4 * Fourier.numDescriptor);
+  SetLength(id, Fourier.numEntry);
+  SetLength(estima, Fourier.numEntry);
+  bnd := TBoundary.Create;
+  test := TModel.Create;
+  try
+    n := bnd.numP;
+    for i := 0 to Fourier.numDescriptor - 1 do
+    begin
+      test.coReal1[i] := 0;
+      test.coImag1[i] := 0;
+      test.coReal2[i] := 0;
+      test.coImag2[i] := 0;
+      for j := 0 to n - 1 do
       begin
-        if RadioButton1.IsChecked = true then
-        else;
+        fr := bnd.X[j + 1] - bnd.X[j];
+        fi := bnd.Y[j + 1] - bnd.Y[j];
+        cc := cos(2 * pi * i * j / n);
+        ss := sin(2 * pi * i * j / n);
+        test.coReal1[i] := test.coReal1[i] + fr * cc + fi * ss;
+        test.coImag1[i] := test.coImag1[i] - fr * ss + fi * cc;
+        test.coReal2[i] := test.coReal2[i] + fr * cc - fi * ss;
+        test.coImag2[i] := test.coImag2[i] + fr * ss + fi * cc;
       end;
+      test.coReal1[i] := test.coReal1[i] / n;
+      test.coImag1[i] := test.coImag1[i] / n;
+      test.coReal2[i] := test.coReal2[i] / n;
+      test.coImag2[i] := test.coImag2[i] / n;
+    end;
+    X[0] := bnd.X[0];
+    Y[0] := bnd.Y[0];
+    for i := 0 to n - 1 do
+    begin
+      wr[i] := 0;
+      wi[i] := 0;
+      for j := 1 to Fourier.numDescriptor do
+      begin
+        cc := cos(2 * pi * i * j / n);
+        ss := sin(2 * pi * i * j / n);
+        wr[i] := wr[i] + test.coReal1[j] * cc + test.coImag1[j] * ss +
+          test.coReal2[j] * cc + test.coImag2[j] * ss;
+        wi[i] := wi[i] + test.coReal1[j] * ss + test.coImag1[j] * cc -
+          test.coReal2[j] * ss + test.coImag2[j] * cc;
+      end;
+    end;
+    Image3.Canvas.DrawRect(Image3.BoundsRect, 0, 0, [], 1);
+    for i := 1 to n - 1 do
+    begin
+      X[i] := X[i - 1] + wr[i];
+      Y[i] := Y[i - 1] + wi[i];
+      Image3.Canvas.DrawLine(PointF(X[i], Y[i]), PointF(X[i - 1], Y[i - 1]), 1);
+    end;
+    for i := 0 to Fourier.numEntry - 1 do
+      id[i] := i;
+    cnt := 0;
+    for i := 1 to Fourier.numDescriptor do
+    begin
+      a[cnt] := test.coReal1[i];
+      a[Fourier.numDescriptor + cnt] := test.coImag1[i];
+      a[2 * Fourier.numDescriptor + cnt] := test.coReal2[i];
+      a[3 * Fourier.numDescriptor + cnt] := test.coImag2[i];
+      inc(cnt);
+    end;
+    for n := 0 to Fourier.numEntry - 1 do
+    begin
+      cnt := 0;
+      for i := 1 to Fourier.numDescriptor do
+      begin
+        b[cnt] := Fourier.model[n].coImag1[i];
+        b[2 * Fourier.numDescriptor + cnt] := Fourier.model[n].coImag1[i];
+        b[3 * Fourier.numDescriptor + cnt] := Fourier.model[n].coReal2[i];
+        b[4 * Fourier.numDescriptor + cnt] := Fourier.model[n].coImag2[i];
+        inc(cnt);
+      end;
+      if RadioButton1.IsChecked = true then
+      begin
+        dist := 0;
+        for i := 0 to 4 * Fourier.numDescriptor - 1 do
+          dist := dist + (a[i] - b[i]) * (a[i] - b[i]);
+        estima[n] := Sqrt(dist);
+      end
+      else
+        estima[n] := obj.Correlation(a, b, 4 * numDescriptor);
+    end;
+    if RadioButton1.IsChecked = true then
+      obj.sortingSmall(estima, id, Fourier.numEntry)
+    else
+      obj.sortingBig(estima, id, Fourier.numEntry);
+  finally
+    Finalize(a);
+    Finalize(b);
+    Finalize(estima);
+    bnd.Free;
+    test.Free;
   end;
 end;
 
@@ -143,17 +273,50 @@ begin
 end;
 
 procedure TForm1.Button4Click(Sender: TObject);
-begin
-  TabControl1.TabIndex := 2;
-end;
-
-procedure TForm1.Button5Click(Sender: TObject);
 var
-  r1, r2: TRectF;
+  i, n: integer;
+  j: integer;
+  k: integer;
+  fr, fi, ss, cc: Double;
 begin
-  r1:= RectF(0,0,Image2.Width,Image2.Height);
-  r2.TopLeft:=PointF(300,300);
-  Image1.Canvas.DrawBitmap(Image1.Bitmap,r1,r2,1);
+  for i := 0 to numEntry - 1 do
+  begin
+    n := Fourier.boundary[i].numP;
+    for j := 0 to Fourier.numDescriptor - 1 do
+    begin
+      with Fourier.model[i] do
+      begin
+        coReal1[j] := 0;
+        coReal2[j] := 0;
+        coImag1[j] := 0;
+        coImag2[j] := 0;
+      end;
+      Fourier.boundary[i].X[n] := Fourier.boundary[i].X[0];
+      Fourier.boundary[i].Y[n] := Fourier.boundary[i].Y[0];
+      for k := 0 to n - 1 do
+      begin
+        fr := Fourier.boundary[i].X[k + 1] - Fourier.boundary[i].X[k];
+        fi := Fourier.boundary[i].Y[k + 1] - Fourier.boundary[i].Y[k];
+        cc := cos(2 * pi * j * k / n);
+        ss := sin(2 * pi * j * k / n);
+        with Fourier.model[i] do
+        begin
+          coReal1[j] := coReal1[j] + fr * cc + fi * ss;
+          coReal2[j] := coReal2[j] - fr * ss + fi * cc;
+          coImag1[j] := coImag1[j] + fr * cc - fi * ss;
+          coImag2[j] := coImag2[j] + fr * ss + fi * cc;
+        end;
+      end;
+      with Fourier.model[i] do
+      begin
+        coReal1[j] := coReal1[j] / n;
+        coReal2[j] := coReal2[j] / n;
+        coImag1[j] := coImag1[j] / n;
+        coImag2[j] := coImag2[j] / n;
+      end;
+    end;
+  end;
+  TabControl1.TabIndex := 2;
 end;
 
 procedure TForm1.CameraComponent1SampleBufferReady(Sender: TObject;
@@ -192,6 +355,7 @@ begin
   buf := TBitmap.Create;
   cap := not Image1.Bitmap.IsEmpty;
   obj := TPreProcess.Create;
+  Fourier := TFourier.Create;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -199,6 +363,7 @@ begin
   bmp.Free;
   buf.Free;
   obj.Free;
+  Fourier.Free;
   Finalize(farr);
 end;
 

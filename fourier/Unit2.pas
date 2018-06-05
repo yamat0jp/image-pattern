@@ -13,19 +13,18 @@ type
   end;
 
   TModel = class
+  const
+    MAX_REPRESENTATIVE = 20;
   private
-    FReal1: array of Double;
-    FReal2: array of Double;
-    FImag1: array of Double;
-    FImag2: array of Double;
+    FReal1: array [0 .. MAX_REPRESENTATIVE - 1] of Double;
+    FReal2: array [0 .. MAX_REPRESENTATIVE - 1] of Double;
+    FImag1: array [0 .. MAX_REPRESENTATIVE - 1] of Double;
+    FImag2: array [0 .. MAX_REPRESENTATIVE - 1] of Double;
     FName: string;
-    FnumDescriptor: integer;
     function GetcoParam(X: integer; const Index: integer): Double;
     procedure SetcoParam(X: integer; const Index: integer; const Value: Double);
-    procedure SetnumDescriptor(const Value: integer);
-    property numDescriptor: integer read FnumDescriptor write SetnumDescriptor;
   public
-    destructor Destroy; override;
+    numDescriptor: integer;
     property coReal1[X: integer]: Double index 0 read GetcoParam
       write SetcoParam;
     property coReal2[X: integer]: Double index 1 read GetcoParam
@@ -38,54 +37,41 @@ type
   end;
 
   TBoundary = class
-  private
-    FX: array of Double;
-    FY: array of Double;
-    FP: integer;
-    function Getx(X: integer): Double;
-    function Gety(X: integer): Double;
-    procedure Setx(X: integer; const Value: Double);
-    procedure Sety(X: integer; const Value: Double);
-    procedure SetnumP(const Value: integer);
+  const
+    MAX_POINT = 300;
   public
-    destructor Destroy; override;
-    property numP: integer read FP write SetnumP;
-    property X[X: integer]: Double read Getx write Setx;
-    property Y[X: integer]: Double read Gety write Sety;
+    X, Y: array [0 .. MAX_POINT - 1] of Double;
+    numP: integer;
+    Count: integer;
   end;
 
   TFourier = class
   const
-    MAX_POINT = 50;
+    MAX_RECT = 50;
+    MAX_ENTRY = 100;
   private
-    FModels: array of TModel;
-    FBoundary: array of TBoundary;
+    FModels: array [0 .. MAX_ENTRY] of TModel;
+    FBoundary: array [0 .. MAX_ENTRY] of TBoundary;
     FnumEntry: integer;
     function Getmodel(X: integer): TModel;
     function Getboundary(X: integer): TBoundary;
-    procedure SetnumEntry(const Value: integer);
     function GetnumDescriptor: integer;
     procedure SetnumDescriptor(const Value: integer);
-  protected
     procedure Clear;
+    function labelborder8(nx, ny, X, Y, code, cnt: integer;
+      f, id: TBinary): Boolean;
+    procedure SetnumEntry(const Value: integer);
   public
+    ar: array [0 .. MAX_RECT - 1] of TRect;
+    minWidth, minHeight: integer;
+    bnd: TBoundary;
+    constructor Create;
     destructor Destroy; override;
     property model[X: integer]: TModel read Getmodel;
     property boundary[X: integer]: TBoundary read Getboundary;
     property numEntry: integer read FnumEntry write SetnumEntry;
     property numDescriptor: integer read GetnumDescriptor
       write SetnumDescriptor;
-  end;
-
-  TPreProcess = class
-  const
-    MAX_RECT = 50;
-  private
-    function labelborder8(nx, ny, X, Y, code, cnt: integer;
-      f, id: TBinary): Boolean;
-  public
-    ar: array [0 .. MAX_RECT - 1] of TRect;
-    minWidth, minHeight: integer;
     procedure BinaryGray(bmp: TBitmap; th: integer; f: TBinary;
       flagBinaryDisp: Boolean);
     function DetectArea(bmp: TBitmap; f: TBinary): integer;
@@ -98,7 +84,7 @@ type
 
 implementation
 
-procedure TPreProcess.BinaryGray(bmp: TBitmap; th: integer; f: TBinary;
+procedure TFourier.BinaryGray(bmp: TBitmap; th: integer; f: TBinary;
   flagBinaryDisp: Boolean);
 var
   i, k, nx, ny: integer;
@@ -138,7 +124,7 @@ begin
   end;
 end;
 
-function TPreProcess.Correlation(A, B: array of Double; cnt: integer): Double;
+function TFourier.Correlation(A, B: array of Double; cnt: integer): Double;
 var
   sigA, sigB, sig: Double;
   i: integer;
@@ -150,12 +136,18 @@ begin
   begin
     sigA := sigA + A[i] * A[i];
     sigB := sigB + B[i] * B[i];
-    sig := A[i] * B[i];
+    sig := sig + A[i] * B[i];
   end;
   result := sig / (Sqrt(sigA) * Sqrt(sigB));
 end;
 
-function TPreProcess.DetectArea(bmp: TBitmap; f: TBinary): integer;
+constructor TFourier.Create;
+begin
+  inherited;
+  SetnumEntry(10);
+end;
+
+function TFourier.DetectArea(bmp: TBitmap; f: TBinary): integer;
 var
   i: integer;
   j: integer;
@@ -182,6 +174,7 @@ begin
   i := 10;
   j := 10;
   result := 0;
+  boundary[0].Count:=0;
   while j < ny - 10 do
   begin
     if (f[i, j] = 1) and (id[i, j] = 0) then
@@ -207,6 +200,10 @@ begin
         code := 7;
         if labelborder8(nx, ny, i, j, code, result, f, id) = true then
           inc(result);
+        if result < numEntry then
+          boundary[result].Count:=0
+        else
+          break;
       end
       else if f[i + 1, j] = 0 then
       begin
@@ -222,24 +219,25 @@ begin
     StrokeThickness := 3;
     BeginScene;
     for i := 0 to MAX_RECT - 1 do
-      bmp.Canvas.DrawRect(RectF(ar[i].Left, ar[i].Top, ar[i].Right,
-        ar[i].Bottom), 0, 0, [], 1.0);
+      bmp.Canvas.DrawRect(RectF(ar[i].Left - 3, ar[i].Top - 3, ar[i].Right + 3,
+        ar[i].Bottom + 3), 0, 0, [], 1.0);
     EndScene;
   end;
   Finalize(id);
 end;
 
-function TPreProcess.labelborder8(nx, ny, X, Y, code, cnt: integer;
+function TFourier.labelborder8(nx, ny, X, Y, code, cnt: integer;
   f, id: TBinary): Boolean;
 const
   edge = 10;
 var
-  i1, i2, j1, j2: integer;
+  i1, i2, j1, j2, ii: integer;
 begin
   i1 := X;
   j1 := Y;
   i2 := 0;
   j2 := 0;
+  ii := 0;
   while (i2 <> X) or (j2 <> Y) do
   begin
     case code of
@@ -334,7 +332,13 @@ begin
         ar[cnt].Bottom := j2 + 1;
       i1 := i2;
       j1 := j2;
-      //boundary
+      if ii < TBoundary.MAX_POINT then
+      begin
+        boundary[cnt].X[ii] := i1;
+        boundary[cnt].Y[ii] := j1;
+        inc(boundary[cnt].Count);
+      end;
+      inc(ii);
     end
     else
     begin
@@ -345,7 +349,7 @@ begin
   result := not((ar[cnt].Width < minWidth) or (ar[cnt].Height < minHeight));
 end;
 
-procedure TPreProcess.sortingBig(A: array of Double; id: array of integer;
+procedure TFourier.sortingBig(A: array of Double; id: array of integer;
   n: integer);
 var
   k, kk, i: integer;
@@ -366,7 +370,7 @@ begin
   end;
 end;
 
-procedure TPreProcess.sortingPos(numrect: integer);
+procedure TFourier.sortingPos(numrect: integer);
 const
   eps = 10;
 var
@@ -392,7 +396,7 @@ begin
   end;
 end;
 
-procedure TPreProcess.sortingSmall(A: array of Double; id: array of integer;
+procedure TFourier.sortingSmall(A: array of Double; id: array of integer;
   n: integer);
 var
   k, kk, i: integer;
@@ -413,8 +417,6 @@ begin
   end;
 end;
 
-{ TFourier }
-
 procedure TFourier.Clear;
 var
   i: integer;
@@ -424,8 +426,6 @@ begin
     FModels[i].Free;
     FBoundary[i].Free;
   end;
-  Finalize(FModels);
-  Finalize(FBoundary);
 end;
 
 destructor TFourier.Destroy;
@@ -462,22 +462,15 @@ var
   i: integer;
 begin
   FnumEntry := Value;
-  Initialize(FBoundary);
-  SetLength(FBoundary, Value);
+  Clear;
   for i := 0 to Value - 1 do
+  begin
+    FModels[i]:=TModel.Create;
     FBoundary[i] := TBoundary.Create;
+  end;
 end;
 
 { TModel }
-
-destructor TModel.Destroy;
-begin
-  Finalize(FReal1);
-  Finalize(FReal2);
-  Finalize(FImag1);
-  Finalize(FImag2);
-  inherited;
-end;
 
 function TModel.GetcoParam(X: integer; const Index: integer): Double;
 begin
@@ -507,57 +500,6 @@ begin
     3:
       FImag2[X] := Value;
   end;
-end;
-
-procedure TModel.SetnumDescriptor(const Value: integer);
-begin
-  FnumDescriptor := Value;
-  Initialize(FReal1);
-  Initialize(FReal2);
-  Initialize(FImag1);
-  Initialize(FImag2);
-  SetLength(FReal1, Value);
-  SetLength(FReal2, Value);
-  SetLength(FImag1, Value);
-  SetLength(FImag2, Value);
-end;
-
-{ TBoundary }
-
-destructor TBoundary.Destroy;
-begin
-  Finalize(FX);
-  Finalize(FX);
-  inherited;
-end;
-
-function TBoundary.Getx(X: integer): Double;
-begin
-  result := FX[X];
-end;
-
-function TBoundary.Gety(X: integer): Double;
-begin
-  result := FY[X];
-end;
-
-procedure TBoundary.SetnumP(const Value: integer);
-begin
-  Initialize(FX);
-  Initialize(FY);
-  SetLength(FX, Value);
-  SetLength(FY, Value);
-  FP := Value;
-end;
-
-procedure TBoundary.Setx(X: integer; const Value: Double);
-begin
-  FX[X] := Value;
-end;
-
-procedure TBoundary.Sety(X: integer; const Value: Double);
-begin
-  FY[X] := Value;
 end;
 
 end.

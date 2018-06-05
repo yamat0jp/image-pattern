@@ -72,7 +72,6 @@ type
     bmp: TBitmap;
     buf: TBitmap;
     cap: Boolean;
-    obj: TPreProcess;
     farr: TBinary;
     numRect: integer;
     numDescriptor: integer;
@@ -113,10 +112,10 @@ begin
     0:
       if Image2.Canvas.BeginScene = true then
       begin
-        for i := 0 to obj.MAX_RECT - 1 do
+        for i := 0 to Fourier.MAX_RECT - 1 do
         begin
-          r := RectF(obj.ar[i].Left, obj.ar[i].Top, obj.ar[i].Right,
-            obj.ar[i].Bottom);
+          r := RectF(Fourier.ar[i].Left, Fourier.ar[i].Top, Fourier.ar[i].Right,
+            Fourier.ar[i].Bottom);
           if (X > r.Left) and (X < r.Right) and (Y > r.Top) and (Y < r.Bottom)
           then
           begin
@@ -130,10 +129,11 @@ begin
               rr.Width := r.Width;
               rr.Height := r.Height * rr.Width / r.Width;
             end;
-            rr.Left := (Image2.Width - rr.Width) / 2;
-            rr.Top := (Image2.Height - rr.Height) / 2;
+            //rr.Left := (Image2.Width - rr.Width) / 2;
+            //rr.Top := (Image2.Height - rr.Height) / 2;
             Image2.Canvas.FillRect(Image2.BoundsRect, 0, 0, [], 1.0);
             Image2.Canvas.DrawBitmap(Image1.Bitmap, r, rr, 1.0);
+            break;
           end;
         end;
         Image2.Canvas.EndScene;
@@ -150,7 +150,7 @@ var
   id: array of integer;
   a, b: array of Double;
   estima: array of Double;
-  X, Y, wr, wi: array [0 .. TFourier.MAX_POINT] of Double;
+  X, Y, wr, wi: array [0 .. TBoundary.MAX_POINT] of Double;
   n, cnt: integer;
   test: TModel;
   j: integer;
@@ -161,8 +161,8 @@ begin
   SetLength(b, 4 * Fourier.numDescriptor);
   SetLength(id, Fourier.numEntry);
   SetLength(estima, Fourier.numEntry);
-  bnd := TBoundary.Create;
   test := TModel.Create;
+  bnd:=TBoundary.Create;
   try
     n := bnd.numP;
     for i := 0 to Fourier.numDescriptor - 1 do
@@ -240,18 +240,18 @@ begin
         estima[n] := Sqrt(dist);
       end
       else
-        estima[n] := obj.Correlation(a, b, 4 * numDescriptor);
+        estima[n] := Fourier.Correlation(a, b, 4 * numDescriptor);
     end;
     if RadioButton1.IsChecked = true then
-      obj.sortingSmall(estima, id, Fourier.numEntry)
+      Fourier.sortingSmall(estima, id, Fourier.numEntry)
     else
-      obj.sortingBig(estima, id, Fourier.numEntry);
+      Fourier.sortingBig(estima, id, Fourier.numEntry);
   finally
     Finalize(a);
     Finalize(b);
     Finalize(estima);
-    bnd.Free;
     test.Free;
+    bnd.Free;
   end;
 end;
 
@@ -274,7 +274,7 @@ end;
 
 procedure TForm1.Button4Click(Sender: TObject);
 var
-  i, n: integer;
+  i, n, m: integer;
   j: integer;
   k: integer;
   fr, fi, ss, cc: Double;
@@ -291,12 +291,16 @@ begin
         coImag1[j] := 0;
         coImag2[j] := 0;
       end;
-      Fourier.boundary[i].X[n] := Fourier.boundary[i].X[0];
-      Fourier.boundary[i].Y[n] := Fourier.boundary[i].Y[0];
+      with Fourier.boundary[i] do
+      begin
+        m := Count div n;
+        X[n*m] := X[0];
+        Y[n*m] := Y[0];
+      end;
       for k := 0 to n - 1 do
       begin
-        fr := Fourier.boundary[i].X[k + 1] - Fourier.boundary[i].X[k];
-        fi := Fourier.boundary[i].Y[k + 1] - Fourier.boundary[i].Y[k];
+        fr := Fourier.boundary[i].X[k*m + 1] - Fourier.boundary[i].X[k*m];
+        fi := Fourier.boundary[i].Y[k*m + 1] - Fourier.boundary[i].Y[k*m];
         cc := cos(2 * pi * j * k / n);
         ss := sin(2 * pi * j * k / n);
         with Fourier.model[i] do
@@ -341,11 +345,11 @@ begin
   Initialize(farr);
   SetLength(farr, bmp.Width, bmp.Height);
   thBinary := Edit3.Text.ToInteger;
-  obj.minWidth := Edit1.Text.ToInteger;
-  obj.minHeight := Edit2.Text.ToInteger;
-  obj.BinaryGray(bmp, thBinary, farr, true);
-  numRect := obj.DetectArea(bmp, farr);
-  obj.sortingPos(numRect);
+  Fourier.minWidth := Edit1.Text.ToInteger;
+  Fourier.minHeight := Edit2.Text.ToInteger;
+  Fourier.BinaryGray(bmp, thBinary, farr, true);
+  numRect := Fourier.DetectArea(bmp, farr);
+  Fourier.sortingPos(numRect);
   Image1.Bitmap.Assign(bmp);
 end;
 
@@ -354,7 +358,6 @@ begin
   bmp := TBitmap.Create;
   buf := TBitmap.Create;
   cap := not Image1.Bitmap.IsEmpty;
-  obj := TPreProcess.Create;
   Fourier := TFourier.Create;
 end;
 
@@ -362,7 +365,6 @@ procedure TForm1.FormDestroy(Sender: TObject);
 begin
   bmp.Free;
   buf.Free;
-  obj.Free;
   Fourier.Free;
   Finalize(farr);
 end;

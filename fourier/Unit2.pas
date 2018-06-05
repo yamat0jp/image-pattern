@@ -174,7 +174,7 @@ begin
   i := 10;
   j := 10;
   result := 0;
-  boundary[0].Count:=0;
+  boundary[0].Count := 0;
   while j < ny - 10 do
   begin
     if (f[i, j] = 1) and (id[i, j] = 0) then
@@ -201,7 +201,7 @@ begin
         if labelborder8(nx, ny, i, j, code, result, f, id) = true then
           inc(result);
         if result < numEntry then
-          boundary[result].Count:=0
+          boundary[result].Count := 0
         else
           break;
       end
@@ -465,7 +465,7 @@ begin
   Clear;
   for i := 0 to Value - 1 do
   begin
-    FModels[i]:=TModel.Create;
+    FModels[i] := TModel.Create;
     FBoundary[i] := TBoundary.Create;
   end;
 end;

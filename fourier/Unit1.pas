@@ -74,8 +74,6 @@ type
     cap: Boolean;
     farr: TBinary;
     numRect: integer;
-    numDescriptor: integer;
-    numEntry: integer;
     Fourier: TFourier;
     { private êÈåæ }
     procedure ShowToolbar(AShow: Boolean);
@@ -129,8 +127,8 @@ begin
               rr.Width := r.Width;
               rr.Height := r.Height * rr.Width / r.Width;
             end;
-            //rr.Left := (Image2.Width - rr.Width) / 2;
-            //rr.Top := (Image2.Height - rr.Height) / 2;
+            // rr.Left := (Image2.Width - rr.Width) / 2;
+            // rr.Top := (Image2.Height - rr.Height) / 2;
             Image2.Canvas.FillRect(Image2.BoundsRect, 0, 0, [], 1.0);
             Image2.Canvas.DrawBitmap(Image1.Bitmap, r, rr, 1.0);
             break;
@@ -162,7 +160,7 @@ begin
   SetLength(id, Fourier.numEntry);
   SetLength(estima, Fourier.numEntry);
   test := TModel.Create;
-  bnd:=TBoundary.Create;
+  bnd := TBoundary.Create;
   try
     n := bnd.numP;
     for i := 0 to Fourier.numDescriptor - 1 do
@@ -240,7 +238,7 @@ begin
         estima[n] := Sqrt(dist);
       end
       else
-        estima[n] := Fourier.Correlation(a, b, 4 * numDescriptor);
+        estima[n] := Fourier.Correlation(a, b, 4 * Fourier.numDescriptor);
     end;
     if RadioButton1.IsChecked = true then
       Fourier.sortingSmall(estima, id, Fourier.numEntry)
@@ -279,7 +277,8 @@ var
   k: integer;
   fr, fi, ss, cc: Double;
 begin
-  for i := 0 to numEntry - 1 do
+  Fourier.numEntry := Edit5.Text.ToInteger;
+  for i := 0 to Fourier.numEntry - 1 do
   begin
     n := Fourier.boundary[i].numP;
     for j := 0 to Fourier.numDescriptor - 1 do
@@ -294,13 +293,13 @@ begin
       with Fourier.boundary[i] do
       begin
         m := Count div n;
-        X[n*m] := X[0];
-        Y[n*m] := Y[0];
+        X[n * m] := X[0];
+        Y[n * m] := Y[0];
       end;
       for k := 0 to n - 1 do
       begin
-        fr := Fourier.boundary[i].X[k*m + 1] - Fourier.boundary[i].X[k*m];
-        fi := Fourier.boundary[i].Y[k*m + 1] - Fourier.boundary[i].Y[k*m];
+        fr := Fourier.boundary[i].X[(k + 1) * m] - Fourier.boundary[i].X[k * m];
+        fi := Fourier.boundary[i].Y[(k + 1) * m] - Fourier.boundary[i].Y[k * m];
         cc := cos(2 * pi * j * k / n);
         ss := sin(2 * pi * j * k / n);
         with Fourier.model[i] do

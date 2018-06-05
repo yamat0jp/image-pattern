@@ -76,7 +76,6 @@ type
     bmp: TBitmap;
     buf: TBitmap;
     cap: Boolean;
-    numRect: integer;
     Fourier, recg: TFourier;
     thBinary: integer;
     { private êÈåæ }
@@ -321,9 +320,12 @@ begin
       end;
     end;
   end;
-  recg.BinaryGray(Image3.Bitmap, thBinary, true);
-  numRect := recg.DetectArea(Image3.Bitmap);
-  recg.sortingPos(numRect);
+  thBinary:= Edit3.Text.ToInteger;
+  recg.minWidth := Edit1.Text.ToInteger;
+  recg.minHeight := Edit2.Text.ToInteger;
+  recg.BinaryGray(Image4.Bitmap, thBinary, true);
+  recg.DetectArea(Image4.Bitmap);
+  recg.sortingPos;
   TabControl1.TabIndex := 2;
 end;
 
@@ -347,9 +349,9 @@ begin
   thBinary := Edit3.Text.ToInteger;
   Fourier.minWidth := Edit1.Text.ToInteger;
   Fourier.minHeight := Edit2.Text.ToInteger;
-  Fourier.BinaryGray(bmp, thBinary,  true);
-  numRect := Fourier.DetectArea(bmp);
-  Fourier.sortingPos(numRect);
+  Fourier.BinaryGray(bmp, thBinary, true);
+  Fourier.DetectArea(bmp);
+  Fourier.sortingPos;
   Image1.Bitmap.Assign(bmp);
 end;
 
@@ -359,9 +361,9 @@ begin
   buf := TBitmap.Create;
   cap := not Image1.Bitmap.IsEmpty;
   Fourier := TFourier.Create;
-  Fourier.color:=TAlphaColors.Blue;
-  recg:=TFourier.Create;
-  recg.color:=TAlphaColors.Red;
+  Fourier.color := TAlphaColors.Blue;
+  recg := TFourier.Create;
+  recg.color := TAlphaColors.Red;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);

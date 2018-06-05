@@ -38,7 +38,7 @@ type
 
   TBoundary = class
   const
-    MAX_POINT = 300;
+    MAX_POINT = 1000;
   public
     X, Y: array [0 .. MAX_POINT - 1] of Double;
     numP: integer;
@@ -54,6 +54,7 @@ type
     FBoundary: array [0 .. MAX_ENTRY] of TBoundary;
     FnumEntry: integer;
     farr: TBinary;
+    numRect: integer;
     function Getmodel(X: integer): TModel;
     function Getboundary(X: integer): TBoundary;
     function GetnumDescriptor: integer;
@@ -66,7 +67,6 @@ type
     color: TAlphaColor;
     ar: array [0 .. MAX_RECT - 1] of TRect;
     minWidth, minHeight: integer;
-    bnd: TBoundary;
     constructor Create;
     destructor Destroy; override;
     property model[X: integer]: TModel read Getmodel;
@@ -75,8 +75,8 @@ type
     property numDescriptor: integer read GetnumDescriptor
       write SetnumDescriptor;
     procedure BinaryGray(bmp: TBitmap; th: integer; flagBinaryDisp: Boolean);
-    function DetectArea(bmp: TBitmap): integer;
-    procedure sortingPos(numrect: integer);
+    procedure DetectArea(bmp: TBitmap);
+    procedure sortingPos;
     function Correlation(A, B: array of Double; cnt: integer): Double;
     procedure sortingSmall(A: array of Double; id: array of integer;
       n: integer);
@@ -150,7 +150,7 @@ begin
   SetnumEntry(10);
 end;
 
-function TFourier.DetectArea(bmp: TBitmap): integer;
+procedure TFourier.DetectArea(bmp: TBitmap);
 var
   i: integer;
   j: integer;
@@ -176,7 +176,7 @@ begin
       id[i, j] := 0;
   i := 10;
   j := 10;
-  result := 0;
+  numRect := 0;
   boundary[0].Count := 0;
   while j < ny - 10 do
   begin
@@ -195,23 +195,23 @@ begin
       end;
       if farr[i - 1, j] = 0 then
       begin
-        if result >= MAX_RECT - 1 then
+        if numRect >= MAX_RECT - 1 then
           break;
-        ar[result].TopLeft := Point(i - 1, j - 1);
-        ar[result].Width := 3;
-        ar[result].Height := 3;
+        ar[numRect].TopLeft := Point(i - 1, j - 1);
+        ar[numRect].Width := 3;
+        ar[numRect].Height := 3;
         code := 7;
-        if labelborder8(nx, ny, i, j, code, result, id) = true then
-          inc(result);
-        if result < numEntry then
-          boundary[result].Count := 0
+        if labelborder8(nx, ny, i, j, code, numRect, id) = true then
+          inc(numRect);
+        if numRect < numEntry then
+          boundary[numRect].Count := 0
         else
           break;
       end
       else if farr[i + 1, j] = 0 then
       begin
         code := 3;
-        labelborder8(nx, ny, i, j, code, result,id);
+        labelborder8(nx, ny, i, j, code, numRect, id);
       end;
     end;
     increment;
@@ -340,6 +340,11 @@ begin
         boundary[cnt].X[ii] := i1;
         boundary[cnt].Y[ii] := j1;
         inc(boundary[cnt].Count);
+      end
+      else
+      begin
+        result:=false;
+        Exit;
       end;
       inc(ii);
     end
@@ -373,7 +378,7 @@ begin
   end;
 end;
 
-procedure TFourier.sortingPos(numrect: integer);
+procedure TFourier.sortingPos;
 const
   eps = 10;
 var
@@ -382,11 +387,11 @@ var
   center: TPoint;
   ar0: TRect;
 begin
-  for i := 0 to numrect do
+  for i := 0 to numRect do
   begin
     ar0 := ar[i];
     center := ar[i].CenterPoint;
-    for j := i to numrect do
+    for j := i to numRect do
       if (center.Y > ar[j].CenterPoint.Y - eps) or
         ((Abs(center.Y - ar[j].CenterPoint.Y) < eps) and
         (center.X > ar[j].CenterPoint.X)) then

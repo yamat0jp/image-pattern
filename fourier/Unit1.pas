@@ -9,7 +9,7 @@ uses
   FMX.Gestures, FMX.Graphics,
   FMX.TabControl, FMX.StdCtrls, System.Actions, FMX.ActnList, FMX.StdActns,
   FMX.MediaLibrary.Actions, FMX.Objects, FMX.Controls.Presentation, FMX.Edit,
-  FMX.Media, Unit2, Math;
+  FMX.Media, Unit2, Math, FMX.ListBox;
 
 type
   TForm1 = class(TForm)
@@ -52,6 +52,8 @@ type
     Label7: TLabel;
     Image2: TImage;
     Image3: TImage;
+    ListBox1: TListBox;
+    Image4: TImage;
     procedure ToolbarCloseButtonClick(Sender: TObject);
     procedure FormGesture(Sender: TObject; const EventInfo: TGestureEventInfo;
       var Handled: Boolean);
@@ -66,15 +68,17 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure CameraComponent1SampleBufferReady(Sender: TObject;
       const ATime: Int64);
+    procedure Image4MouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Single);
   private
     FGestureOrigin: TPointF;
     FGestureInProgress: Boolean;
     bmp: TBitmap;
     buf: TBitmap;
     cap: Boolean;
-    farr: TBinary;
     numRect: integer;
-    Fourier: TFourier;
+    Fourier, recg: TFourier;
+    thBinary: integer;
     { private éŒ¾ }
     procedure ShowToolbar(AShow: Boolean);
     procedure detectImage;
@@ -106,39 +110,37 @@ var
   j: integer;
   a, b: array of Double;
 begin
-  case TabControl1.TabIndex of
-    0:
-      if Image2.Canvas.BeginScene = true then
+  Image2.Canvas.BeginScene;
+  for i := 0 to Fourier.MAX_RECT - 1 do
+  begin
+    r := RectF(Fourier.ar[i].Left, Fourier.ar[i].Top, Fourier.ar[i].Right,
+      Fourier.ar[i].Bottom);
+    if (X > r.Left) and (X < r.Right) and (Y > r.Top) and (Y < r.Bottom) then
+    begin
+      if r.Width < r.Height then
       begin
-        for i := 0 to Fourier.MAX_RECT - 1 do
-        begin
-          r := RectF(Fourier.ar[i].Left, Fourier.ar[i].Top, Fourier.ar[i].Right,
-            Fourier.ar[i].Bottom);
-          if (X > r.Left) and (X < r.Right) and (Y > r.Top) and (Y < r.Bottom)
-          then
-          begin
-            if r.Width < r.Height then
-            begin
-              rr.Height := r.Height;
-              rr.Width := r.Width * rr.Height / r.Height;
-            end
-            else
-            begin
-              rr.Width := r.Width;
-              rr.Height := r.Height * rr.Width / r.Width;
-            end;
-            // rr.Left := (Image2.Width - rr.Width) / 2;
-            // rr.Top := (Image2.Height - rr.Height) / 2;
-            Image2.Canvas.FillRect(Image2.BoundsRect, 0, 0, [], 1.0);
-            Image2.Canvas.DrawBitmap(Image1.Bitmap, r, rr, 1.0);
-            break;
-          end;
-        end;
-        Image2.Canvas.EndScene;
+        rr.Height := r.Height;
+        rr.Width := r.Width * rr.Height / r.Height;
+      end
+      else
+      begin
+        rr.Width := r.Width;
+        rr.Height := r.Height * rr.Width / r.Width;
       end;
-    2:
-      recognition;
+      // rr.Left := (Image2.Width - rr.Width) / 2;
+      // rr.Top := (Image2.Height - rr.Height) / 2;
+      Image2.Canvas.FillRect(Image2.BoundsRect, 0, 0, [], 1.0);
+      Image2.Canvas.DrawBitmap(Image1.Bitmap, r, rr, 1.0);
+      break;
+    end;
   end;
+  Image2.Canvas.EndScene;
+end;
+
+procedure TForm1.Image4MouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Single);
+begin
+  recognition;
 end;
 
 procedure TForm1.recognition;
@@ -319,6 +321,9 @@ begin
       end;
     end;
   end;
+  recg.BinaryGray(Image3.Bitmap, thBinary, true);
+  numRect := recg.DetectArea(Image3.Bitmap);
+  recg.sortingPos(numRect);
   TabControl1.TabIndex := 2;
 end;
 
@@ -329,8 +334,6 @@ begin
 end;
 
 procedure TForm1.detectImage;
-var
-  thBinary: integer;
 begin
   if cap = true then
   begin
@@ -341,13 +344,11 @@ begin
     bmp.Assign(buf);
   cap := false;
   buf.Assign(bmp);
-  Initialize(farr);
-  SetLength(farr, bmp.Width, bmp.Height);
   thBinary := Edit3.Text.ToInteger;
   Fourier.minWidth := Edit1.Text.ToInteger;
   Fourier.minHeight := Edit2.Text.ToInteger;
-  Fourier.BinaryGray(bmp, thBinary, farr, true);
-  numRect := Fourier.DetectArea(bmp, farr);
+  Fourier.BinaryGray(bmp, thBinary,  true);
+  numRect := Fourier.DetectArea(bmp);
   Fourier.sortingPos(numRect);
   Image1.Bitmap.Assign(bmp);
 end;
@@ -358,6 +359,9 @@ begin
   buf := TBitmap.Create;
   cap := not Image1.Bitmap.IsEmpty;
   Fourier := TFourier.Create;
+  Fourier.color:=TAlphaColors.Blue;
+  recg:=TFourier.Create;
+  recg.color:=TAlphaColors.Red;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -365,7 +369,7 @@ begin
   bmp.Free;
   buf.Free;
   Fourier.Free;
-  Finalize(farr);
+  recg.Free;
 end;
 
 procedure TForm1.FormGesture(Sender: TObject;

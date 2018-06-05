@@ -53,15 +53,17 @@ type
     FModels: array [0 .. MAX_ENTRY] of TModel;
     FBoundary: array [0 .. MAX_ENTRY] of TBoundary;
     FnumEntry: integer;
+    farr: TBinary;
     function Getmodel(X: integer): TModel;
     function Getboundary(X: integer): TBoundary;
     function GetnumDescriptor: integer;
     procedure SetnumDescriptor(const Value: integer);
     procedure Clear;
     function labelborder8(nx, ny, X, Y, code, cnt: integer;
-      f, id: TBinary): Boolean;
+      id: TBinary): Boolean;
     procedure SetnumEntry(const Value: integer);
   public
+    color: TAlphaColor;
     ar: array [0 .. MAX_RECT - 1] of TRect;
     minWidth, minHeight: integer;
     bnd: TBoundary;
@@ -72,9 +74,8 @@ type
     property numEntry: integer read FnumEntry write SetnumEntry;
     property numDescriptor: integer read GetnumDescriptor
       write SetnumDescriptor;
-    procedure BinaryGray(bmp: TBitmap; th: integer; f: TBinary;
-      flagBinaryDisp: Boolean);
-    function DetectArea(bmp: TBitmap; f: TBinary): integer;
+    procedure BinaryGray(bmp: TBitmap; th: integer; flagBinaryDisp: Boolean);
+    function DetectArea(bmp: TBitmap): integer;
     procedure sortingPos(numrect: integer);
     function Correlation(A, B: array of Double; cnt: integer): Double;
     procedure sortingSmall(A: array of Double; id: array of integer;
@@ -84,7 +85,7 @@ type
 
 implementation
 
-procedure TFourier.BinaryGray(bmp: TBitmap; th: integer; f: TBinary;
+procedure TFourier.BinaryGray(bmp: TBitmap; th: integer;
   flagBinaryDisp: Boolean);
 var
   i, k, nx, ny: integer;
@@ -94,6 +95,8 @@ var
 begin
   nx := bmp.Width;
   ny := bmp.Height;
+  Initialize(farr);
+  SetLength(farr, nx, ny);
   bmp.Map(TMapAccess.ReadWrite, AData);
   try
     Pointer(acc) := AData.Data;
@@ -117,7 +120,7 @@ begin
           color^.G := 255;
           color^.B := 255;
         end;
-      f[i mod nx, i div nx] := k;
+      farr[i mod nx, i div nx] := k;
     end;
   finally
     bmp.Unmap(AData);
@@ -147,7 +150,7 @@ begin
   SetnumEntry(10);
 end;
 
-function TFourier.DetectArea(bmp: TBitmap; f: TBinary): integer;
+function TFourier.DetectArea(bmp: TBitmap): integer;
 var
   i: integer;
   j: integer;
@@ -177,20 +180,20 @@ begin
   boundary[0].Count := 0;
   while j < ny - 10 do
   begin
-    if (f[i, j] = 1) and (id[i, j] = 0) then
+    if (farr[i, j] = 1) and (id[i, j] = 0) then
     begin
       cnt := 0;
       for m := i - 1 to i + 1 do
         for n := j - 1 to j + 1 do
-          if f[i, j] = 1 then
+          if farr[i, j] = 1 then
             inc(cnt);
       if cnt <= 2 then
       begin
-        f[i, j] := 0;
+        farr[i, j] := 0;
         increment;
         continue;
       end;
-      if f[i - 1, j] = 0 then
+      if farr[i - 1, j] = 0 then
       begin
         if result >= MAX_RECT - 1 then
           break;
@@ -198,24 +201,24 @@ begin
         ar[result].Width := 3;
         ar[result].Height := 3;
         code := 7;
-        if labelborder8(nx, ny, i, j, code, result, f, id) = true then
+        if labelborder8(nx, ny, i, j, code, result, id) = true then
           inc(result);
         if result < numEntry then
           boundary[result].Count := 0
         else
           break;
       end
-      else if f[i + 1, j] = 0 then
+      else if farr[i + 1, j] = 0 then
       begin
         code := 3;
-        labelborder8(nx, ny, i, j, code, result, f, id);
+        labelborder8(nx, ny, i, j, code, result,id);
       end;
     end;
     increment;
   end;
   with bmp.Canvas do
   begin
-    Stroke.color := TAlphaColors.Blue;
+    Stroke.color := color;
     StrokeThickness := 3;
     BeginScene;
     for i := 0 to MAX_RECT - 1 do
@@ -227,7 +230,7 @@ begin
 end;
 
 function TFourier.labelborder8(nx, ny, X, Y, code, cnt: integer;
-  f, id: TBinary): Boolean;
+  id: TBinary): Boolean;
 const
   edge = 10;
 var
@@ -245,7 +248,7 @@ begin
         begin
           i2 := i1;
           j2 := j1 + 1;
-          if f[i2, j2] = 1 then
+          if farr[i2, j2] = 1 then
             code := 7
           else
             code := 1;
@@ -254,7 +257,7 @@ begin
         begin
           i2 := i1 + 1;
           j2 := j1 + 1;
-          if f[i2, j2] = 1 then
+          if farr[i2, j2] = 1 then
             code := 0
           else
             code := 2;
@@ -263,7 +266,7 @@ begin
         begin
           i2 := i1 + 1;
           j2 := j1;
-          if f[i2, j2] = 1 then
+          if farr[i2, j2] = 1 then
             code := 1
           else
             code := 3;
@@ -272,7 +275,7 @@ begin
         begin
           i2 := i1 + 1;
           j2 := j1 - 1;
-          if f[i2, j2] = 1 then
+          if farr[i2, j2] = 1 then
             code := 2
           else
             code := 4;
@@ -281,7 +284,7 @@ begin
         begin
           i2 := i1;
           j2 := j1 - 1;
-          if f[i2, j2] = 1 then
+          if farr[i2, j2] = 1 then
             code := 3
           else
             code := 5;
@@ -290,7 +293,7 @@ begin
         begin
           i2 := i1 - 1;
           j2 := j1 - 1;
-          if f[i2, j2] = 1 then
+          if farr[i2, j2] = 1 then
             code := 4
           else
             code := 6;
@@ -299,7 +302,7 @@ begin
         begin
           i2 := i1 - 1;
           j2 := j1;
-          if f[i2, j2] = 1 then
+          if farr[i2, j2] = 1 then
             code := 5
           else
             code := 7;
@@ -308,7 +311,7 @@ begin
         begin
           i2 := i1 - 1;
           j2 := j1 + 1;
-          if f[i2, j2] = 1 then
+          if farr[i2, j2] = 1 then
             code := 6
           else
             code := 0;
@@ -319,7 +322,7 @@ begin
       result := false;
       Exit;
     end;
-    if f[i2, j2] = 1 then
+    if farr[i2, j2] = 1 then
     begin
       id[i2, j2] := 1;
       if i2 < ar[cnt].Left - 1 then
@@ -426,6 +429,7 @@ begin
     FModels[i].Free;
     FBoundary[i].Free;
   end;
+  Finalize(farr);
 end;
 
 destructor TFourier.Destroy;

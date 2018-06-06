@@ -38,12 +38,11 @@ type
 
   TBoundary = class
   const
-    MAX_POINT = 1000;
+    MAX_POINT = 300;
   public
     X, Y: array [0 .. MAX_POINT - 1] of Double;
     numP: integer;
     Count: integer;
-    Area: integer;
   end;
 
   TFourier = class
@@ -204,10 +203,7 @@ begin
         ar[numRect].Height := 3;
         code := 7;
         if labelborder8(nx, ny, i, j, code, numRect, id) = true then
-        begin
-          boundary[numRect].Area:=numRect;
           inc(numRect);
-        end;
         if numRect < numEntry then
           boundary[numRect].Count := 0
         else
@@ -385,7 +381,7 @@ end;
 
 procedure TFourier.sortingPos;
 const
-  eps = 10;
+  eps = 30;
 var
   i: integer;
   j: integer;
@@ -397,7 +393,7 @@ begin
     ar0 := ar[i];
     center := ar[i].CenterPoint;
     for j := i to numRect do
-      if (center.Y > ar[j].CenterPoint.Y - eps) or
+      if (center.Y > ar[j].CenterPoint.Y + eps) or
         ((Abs(center.Y - ar[j].CenterPoint.Y) < eps) and
         (center.X > ar[j].CenterPoint.X)) then
       begin

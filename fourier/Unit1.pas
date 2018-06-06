@@ -54,6 +54,11 @@ type
     Image3: TImage;
     ListBox1: TListBox;
     Image4: TImage;
+    Button5: TButton;
+    TabItem4: TTabItem;
+    Button6: TButton;
+    Button7: TButton;
+    ListBox2: TListBox;
     procedure ToolbarCloseButtonClick(Sender: TObject);
     procedure FormGesture(Sender: TObject; const EventInfo: TGestureEventInfo;
       var Handled: Boolean);
@@ -71,11 +76,12 @@ type
     procedure Image4MouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Single);
     procedure Button3Click(Sender: TObject);
+    procedure Button5Click(Sender: TObject);
   private
     FGestureOrigin: TPointF;
     FGestureInProgress: Boolean;
     bmp: TBitmap;
-    buf,back: TBitmap;
+    buf, back: TBitmap;
     cap: Boolean;
     Fourier, recg: TFourier;
     thBinary: integer;
@@ -129,13 +135,14 @@ begin
       end;
       // rr.Left := (Image2.Width - rr.Width) / 2;
       // rr.Top := (Image2.Height - rr.Height) / 2;
-      Fourier.rIndex:=i;
+      Fourier.rIndex := i;
       Image2.Canvas.FillRect(Image2.BoundsRect, 0, 0, [], 1.0);
       Image2.Canvas.DrawBitmap(Image1.Bitmap, r, rr, 1.0);
       break;
     end;
   end;
   Image2.Canvas.EndScene;
+  Edit4.SetFocus;
 end;
 
 procedure TForm1.Image4MouseDown(Sender: TObject; Button: TMouseButton;
@@ -248,10 +255,10 @@ begin
     else
       Fourier.sortingBig(estima, id, Fourier.numEntry);
     ListBox1.Items.Clear;
-    i:=0;
-    while (i < 5)and(i < Fourier.numEntry) do
+    i := 0;
+    while (i < 5) and (i < Fourier.numEntry) do
     begin
-      ListBox1.Items.Add(Fourier.model[i].name+estima[i].ToString);
+      ListBox1.Items.Add(Fourier.model[i].name + estima[i].ToString);
       inc(i);
     end;
   finally
@@ -281,13 +288,9 @@ begin
 end;
 
 procedure TForm1.Button3Click(Sender: TObject);
-var
-  i: Integer;
 begin
-  with Fourier do
-  for i := 0 to numEntry-1 do
-    if boundary[i].Area = rIndex then
-      model[i].name:=Edit4.Text;
+  Fourier.model[Fourier.rIndex].name := Edit4.Text;
+  Edit4.Text := '';
 end;
 
 procedure TForm1.Button4Click(Sender: TObject);
@@ -339,7 +342,7 @@ begin
       end;
     end;
   end;
-  thBinary:= Edit3.Text.ToInteger;
+  thBinary := Edit3.Text.ToInteger;
   recg.minWidth := Edit1.Text.ToInteger;
   recg.minHeight := Edit2.Text.ToInteger;
   Image4.Bitmap.Assign(back);
@@ -347,6 +350,15 @@ begin
   recg.DetectArea(Image4.Bitmap);
   recg.sortingPos;
   TabControl1.TabIndex := 2;
+end;
+
+procedure TForm1.Button5Click(Sender: TObject);
+var
+  i: integer;
+begin
+  ListBox2.Items.Clear;
+  for i := 0 to Fourier.numEntry - 1 do
+    ListBox2.Items.Add(Fourier.model[i].name + ' / ' + i.ToString);
 end;
 
 procedure TForm1.CameraComponent1SampleBufferReady(Sender: TObject;
@@ -371,7 +383,7 @@ begin
   Fourier.minHeight := Edit2.Text.ToInteger;
   Fourier.BinaryGray(bmp, thBinary, true);
   Fourier.DetectArea(bmp);
-  Fourier.sortingPos;
+//  Fourier.sortingPos;
   Image1.Bitmap.Assign(bmp);
 end;
 

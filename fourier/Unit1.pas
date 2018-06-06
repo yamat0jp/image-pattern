@@ -70,11 +70,12 @@ type
       const ATime: Int64);
     procedure Image4MouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Single);
+    procedure Button3Click(Sender: TObject);
   private
     FGestureOrigin: TPointF;
     FGestureInProgress: Boolean;
     bmp: TBitmap;
-    buf: TBitmap;
+    buf,back: TBitmap;
     cap: Boolean;
     Fourier, recg: TFourier;
     thBinary: integer;
@@ -128,6 +129,7 @@ begin
       end;
       // rr.Left := (Image2.Width - rr.Width) / 2;
       // rr.Top := (Image2.Height - rr.Height) / 2;
+      Fourier.rIndex:=i;
       Image2.Canvas.FillRect(Image2.BoundsRect, 0, 0, [], 1.0);
       Image2.Canvas.DrawBitmap(Image1.Bitmap, r, rr, 1.0);
       break;
@@ -245,6 +247,13 @@ begin
       Fourier.sortingSmall(estima, id, Fourier.numEntry)
     else
       Fourier.sortingBig(estima, id, Fourier.numEntry);
+    ListBox1.Items.Clear;
+    i:=0;
+    while (i < 5)and(i < Fourier.numEntry) do
+    begin
+      ListBox1.Items.Add(Fourier.model[i].name+estima[i].ToString);
+      inc(i);
+    end;
   finally
     Finalize(a);
     Finalize(b);
@@ -269,6 +278,16 @@ procedure TForm1.Button2Click(Sender: TObject);
 begin
   CameraComponent1.Active := false;
   detectImage;
+end;
+
+procedure TForm1.Button3Click(Sender: TObject);
+var
+  i: Integer;
+begin
+  with Fourier do
+  for i := 0 to numEntry-1 do
+    if boundary[i].Area = rIndex then
+      model[i].name:=Edit4.Text;
 end;
 
 procedure TForm1.Button4Click(Sender: TObject);
@@ -323,6 +342,7 @@ begin
   thBinary:= Edit3.Text.ToInteger;
   recg.minWidth := Edit1.Text.ToInteger;
   recg.minHeight := Edit2.Text.ToInteger;
+  Image4.Bitmap.Assign(back);
   recg.BinaryGray(Image4.Bitmap, thBinary, true);
   recg.DetectArea(Image4.Bitmap);
   recg.sortingPos;
@@ -359,17 +379,20 @@ procedure TForm1.FormCreate(Sender: TObject);
 begin
   bmp := TBitmap.Create;
   buf := TBitmap.Create;
+  back := TBitmap.Create;
   cap := not Image1.Bitmap.IsEmpty;
   Fourier := TFourier.Create;
   Fourier.color := TAlphaColors.Blue;
   recg := TFourier.Create;
   recg.color := TAlphaColors.Red;
+  back.Assign(Image4.Bitmap);
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   bmp.Free;
   buf.Free;
+  back.Free;
   Fourier.Free;
   recg.Free;
 end;

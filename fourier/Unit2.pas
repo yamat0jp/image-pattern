@@ -43,6 +43,7 @@ type
     X, Y: array [0 .. MAX_POINT - 1] of Double;
     numP: integer;
     Count: integer;
+    Area: integer;
   end;
 
   TFourier = class
@@ -67,6 +68,7 @@ type
     color: TAlphaColor;
     ar: array [0 .. MAX_RECT - 1] of TRect;
     minWidth, minHeight: integer;
+    rIndex: integer;
     constructor Create;
     destructor Destroy; override;
     property model[X: integer]: TModel read Getmodel;
@@ -202,7 +204,10 @@ begin
         ar[numRect].Height := 3;
         code := 7;
         if labelborder8(nx, ny, i, j, code, numRect, id) = true then
+        begin
+          boundary[numRect].Area:=numRect;
           inc(numRect);
+        end;
         if numRect < numEntry then
           boundary[numRect].Count := 0
         else

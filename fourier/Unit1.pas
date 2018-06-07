@@ -312,6 +312,11 @@ var
   fr, fi, ss, cc: Single;
 begin
   Fourier.numDescriptor := Edit5.Text.ToInteger;
+  if Fourier.numDescriptor > 50 then
+  begin
+    Fourier.numDescriptor:=50;
+    Edit5.Text:='50';
+  end;
   for i := 0 to Fourier.numEntry - 1 do
   begin
     n := Fourier.boundary[i].Count;

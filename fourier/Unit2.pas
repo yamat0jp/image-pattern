@@ -14,7 +14,7 @@ type
 
   TModel = class
   const
-    MAX_REPRESENTATIVE = 20;
+    MAX_REPRESENTATIVE = 50;
   private
     FReal1: array [0 .. MAX_REPRESENTATIVE - 1] of Single;
     FReal2: array [0 .. MAX_REPRESENTATIVE - 1] of Single;

@@ -3,7 +3,7 @@ unit Unit2;
 interface
 
 uses
-  FMX.Graphics, FMX.Types, System.UITypes, System.Types;
+  FMX.Graphics, FMX.Types, System.UITypes, System.Types, Math;
 
 type
   TBinary = array of array of integer;
@@ -16,32 +16,31 @@ type
   const
     MAX_REPRESENTATIVE = 20;
   private
-    FReal1: array [0 .. MAX_REPRESENTATIVE - 1] of Double;
-    FReal2: array [0 .. MAX_REPRESENTATIVE - 1] of Double;
-    FImag1: array [0 .. MAX_REPRESENTATIVE - 1] of Double;
-    FImag2: array [0 .. MAX_REPRESENTATIVE - 1] of Double;
+    FReal1: array [0 .. MAX_REPRESENTATIVE - 1] of Single;
+    FReal2: array [0 .. MAX_REPRESENTATIVE - 1] of Single;
+    FImag1: array [0 .. MAX_REPRESENTATIVE - 1] of Single;
+    FImag2: array [0 .. MAX_REPRESENTATIVE - 1] of Single;
     FName: string;
-    function GetcoParam(X: integer; const Index: integer): Double;
-    procedure SetcoParam(X: integer; const Index: integer; const Value: Double);
+    function GetcoParam(X: integer; const Index: integer): Single;
+    procedure SetcoParam(X: integer; const Index: integer; const Value: Single);
   public
     numDescriptor: integer;
-    property coReal1[X: integer]: Double index 0 read GetcoParam
+    property coReal1[X: integer]: Single index 0 read GetcoParam
       write SetcoParam;
-    property coReal2[X: integer]: Double index 1 read GetcoParam
+    property coReal2[X: integer]: Single index 1 read GetcoParam
       write SetcoParam;
-    property coImag1[X: integer]: Double index 2 read GetcoParam
+    property coImag1[X: integer]: Single index 2 read GetcoParam
       write SetcoParam;
-    property coImag2[X: integer]: Double index 3 read GetcoParam
+    property coImag2[X: integer]: Single index 3 read GetcoParam
       write SetcoParam;
     property name: string read FName write FName;
   end;
 
   TBoundary = class
   const
-    MAX_POINT = 300;
+    MAX_POINT = 1000;
   public
-    X, Y: array [0 .. MAX_POINT - 1] of Double;
-    numP: integer;
+    X, Y: array [0 .. MAX_POINT - 1] of Single;
     Count: integer;
   end;
 
@@ -78,10 +77,10 @@ type
     procedure BinaryGray(bmp: TBitmap; th: integer; flagBinaryDisp: Boolean);
     procedure DetectArea(bmp: TBitmap);
     procedure sortingPos;
-    function Correlation(A, B: array of Double; cnt: integer): Double;
-    procedure sortingSmall(A: array of Double; id: array of integer;
+    function Correlation(A, B: array of Single; cnt: integer): Single;
+    procedure sortingSmall(A: array of Single; id: array of integer;
       n: integer);
-    procedure sortingBig(A: array of Double; id: array of integer; n: integer);
+    procedure sortingBig(A: array of Single; id: array of integer; n: integer);
   end;
 
 implementation
@@ -128,27 +127,20 @@ begin
   end;
 end;
 
-function TFourier.Correlation(A, B: array of Double; cnt: integer): Double;
+function TFourier.Correlation(A, B: array of Single; cnt: integer): Single;
 var
-  sigA, sigB, sig: Double;
   i: integer;
 begin
-  sigA := 0;
-  sigB := 0;
-  sig := 0;
+  result := 0;
   for i := 0 to cnt - 1 do
-  begin
-    sigA := sigA + A[i] * A[i];
-    sigB := sigB + B[i] * B[i];
-    sig := sig + A[i] * B[i];
-  end;
-  result := sig / (Sqrt(sigA) * Sqrt(sigB));
+    result := result + A[i] * B[i];
+  result := result / (Norm(A) * Norm(B) + 0.01);
 end;
 
 constructor TFourier.Create;
 begin
   inherited;
-  SetnumEntry(10);
+  SetnumEntry(1);
 end;
 
 procedure TFourier.DetectArea(bmp: TBitmap);
@@ -178,7 +170,6 @@ begin
   i := 10;
   j := 10;
   numRect := 0;
-  boundary[0].Count := 0;
   while j < ny - 10 do
   begin
     if (farr[i, j] = 1) and (id[i, j] = 0) then
@@ -203,11 +194,9 @@ begin
         ar[numRect].Height := 3;
         code := 7;
         if labelborder8(nx, ny, i, j, code, numRect, id) = true then
-          inc(numRect);
-        if numRect < numEntry then
-          boundary[numRect].Count := 0
+          inc(numRect)
         else
-          break;
+          SetnumEntry(numEntry-1);
       end
       else if farr[i + 1, j] = 0 then
       begin
@@ -222,7 +211,7 @@ begin
     Stroke.color := color;
     StrokeThickness := 3;
     BeginScene;
-    for i := 0 to MAX_RECT - 1 do
+    for i := 0 to numRect - 1 do
       bmp.Canvas.DrawRect(RectF(ar[i].Left - 3, ar[i].Top - 3, ar[i].Right + 3,
         ar[i].Bottom + 3), 0, 0, [], 1.0);
     EndScene;
@@ -242,6 +231,8 @@ begin
   i2 := 0;
   j2 := 0;
   ii := 0;
+  SetnumEntry(cnt+1);
+  boundary[cnt].Count := 0;
   while (i2 <> X) or (j2 <> Y) do
   begin
     case code of
@@ -344,7 +335,7 @@ begin
       end
       else
       begin
-        result:=false;
+        result := false;
         Exit;
       end;
       inc(ii);
@@ -358,11 +349,11 @@ begin
   result := not((ar[cnt].Width < minWidth) or (ar[cnt].Height < minHeight));
 end;
 
-procedure TFourier.sortingBig(A: array of Double; id: array of integer;
+procedure TFourier.sortingBig(A: array of Single; id: array of integer;
   n: integer);
 var
   k, kk, i: integer;
-  min: Double;
+  min: Single;
 begin
   for k := 0 to n - 1 do
   begin
@@ -405,11 +396,11 @@ begin
   end;
 end;
 
-procedure TFourier.sortingSmall(A: array of Double; id: array of integer;
+procedure TFourier.sortingSmall(A: array of Single; id: array of integer;
   n: integer);
 var
   k, kk, i: integer;
-  max: Double;
+  max: Single;
 begin
   for k := 0 to n - 1 do
   begin
@@ -471,18 +462,24 @@ procedure TFourier.SetnumEntry(const Value: integer);
 var
   i: integer;
 begin
+  if Value > FnumEntry then
+    for i := FnumEntry to Value - 1 do
+    begin
+      FModels[i] := TModel.Create;
+      FBoundary[i] := TBoundary.Create;
+    end
+  else if Value < FnumEntry then
+    for i := Value to FnumEntry - 1 do
+    begin
+      FModels[i].Free;
+      FBoundary[i].Free;
+    end;
   FnumEntry := Value;
-  Clear;
-  for i := 0 to Value - 1 do
-  begin
-    FModels[i] := TModel.Create;
-    FBoundary[i] := TBoundary.Create;
-  end;
 end;
 
 { TModel }
 
-function TModel.GetcoParam(X: integer; const Index: integer): Double;
+function TModel.GetcoParam(X: integer; const Index: integer): Single;
 begin
   result := 0;
   case Index of
@@ -498,7 +495,7 @@ begin
 end;
 
 procedure TModel.SetcoParam(X: integer; const Index: integer;
-  const Value: Double);
+  const Value: Single);
 begin
   case Index of
     0:

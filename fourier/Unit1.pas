@@ -89,6 +89,8 @@ type
     procedure ShowToolbar(AShow: Boolean);
     procedure detectImage;
     procedure recognition;
+    function SingleSortS(item1, item2: TFmxObject): integer;
+    function SingleSortL(item1, item2: TFmxObject): integer;
   public
     { public êÈåæ }
   end;
@@ -114,7 +116,7 @@ var
   i: integer;
   cnt: integer;
   j: integer;
-  a, b: array of Double;
+  a, b: array of Single;
 begin
   Image2.Canvas.BeginScene;
   for i := 0 to Fourier.MAX_RECT - 1 do
@@ -153,16 +155,16 @@ end;
 
 procedure TForm1.recognition;
 var
-  dist: Double;
+  dist: Single;
   i: integer;
   id: array of integer;
-  a, b: array of Double;
-  estima: array of Double;
-  X, Y, wr, wi: array [0 .. TBoundary.MAX_POINT] of Double;
+  a, b: array of Single;
+  estima: array of Single;
+  X, Y, wr, wi: array [0 .. TBoundary.MAX_POINT] of Single;
   n, cnt: integer;
   test: TModel;
   j: integer;
-  fr, fi, cc, ss: Double;
+  fr, fi, cc, ss: Single;
   bnd: TBoundary;
 begin
   SetLength(a, 4 * Fourier.numDescriptor);
@@ -170,9 +172,9 @@ begin
   SetLength(id, Fourier.numEntry);
   SetLength(estima, Fourier.numEntry);
   test := TModel.Create;
-  bnd := TBoundary.Create;
   try
-    n := bnd.numP;
+    bnd := Fourier.boundary[Fourier.rIndex];
+    n := bnd.Count;
     for i := 0 to Fourier.numDescriptor - 1 do
     begin
       test.coReal1[i] := 0;
@@ -211,6 +213,8 @@ begin
           test.coReal2[j] * ss + test.coImag2[j] * cc;
       end;
     end;
+    Image3.Canvas.BeginScene;
+    Image3.Canvas.FillRect(Image3.BoundsRect, 0, 0, [], 1);
     Image3.Canvas.DrawRect(Image3.BoundsRect, 0, 0, [], 1);
     for i := 1 to n - 1 do
     begin
@@ -218,6 +222,7 @@ begin
       Y[i] := Y[i - 1] + wi[i];
       Image3.Canvas.DrawLine(PointF(X[i], Y[i]), PointF(X[i - 1], Y[i - 1]), 1);
     end;
+    Image3.Canvas.EndScene;
     for i := 0 to Fourier.numEntry - 1 do
       id[i] := i;
     cnt := 0;
@@ -258,15 +263,20 @@ begin
     i := 0;
     while (i < 5) and (i < Fourier.numEntry) do
     begin
-      ListBox1.Items.Add(Fourier.model[i].name + estima[i].ToString);
+      j := ListBox1.Items.Add('(' + Fourier.model[i].name + ')' +
+        estima[i].ToString);
+      ListBox1.ListItems[j].TagFloat := estima[i];
       inc(i);
     end;
+    if RadioButton1.IsChecked = true then
+      ListBox1.Sort(SingleSortS)
+    else
+      ListBox1.Sort(SingleSortL);
   finally
     Finalize(a);
     Finalize(b);
     Finalize(estima);
     test.Free;
-    bnd.Free;
   end;
 end;
 
@@ -285,6 +295,7 @@ procedure TForm1.Button2Click(Sender: TObject);
 begin
   CameraComponent1.Active := false;
   detectImage;
+  TabControl1.TabIndex := 0;
 end;
 
 procedure TForm1.Button3Click(Sender: TObject);
@@ -298,12 +309,12 @@ var
   i, n, m: integer;
   j: integer;
   k: integer;
-  fr, fi, ss, cc: Double;
+  fr, fi, ss, cc: Single;
 begin
-  Fourier.numEntry := Edit5.Text.ToInteger;
+  Fourier.numDescriptor := Edit5.Text.ToInteger;
   for i := 0 to Fourier.numEntry - 1 do
   begin
-    n := Fourier.boundary[i].numP;
+    n := Fourier.boundary[i].Count;
     for j := 0 to Fourier.numDescriptor - 1 do
     begin
       with Fourier.model[i] do
@@ -348,7 +359,6 @@ begin
   Image4.Bitmap.Assign(back);
   recg.BinaryGray(Image4.Bitmap, thBinary, true);
   recg.DetectArea(Image4.Bitmap);
-  recg.sortingPos;
   TabControl1.TabIndex := 2;
 end;
 
@@ -383,8 +393,33 @@ begin
   Fourier.minHeight := Edit2.Text.ToInteger;
   Fourier.BinaryGray(bmp, thBinary, true);
   Fourier.DetectArea(bmp);
-//  Fourier.sortingPos;
   Image1.Bitmap.Assign(bmp);
+end;
+
+function TForm1.SingleSortL(item1, item2: TFmxObject): integer;
+var
+  s: Single;
+begin
+  s := TListBoxItem(item1).TagFloat - TListBoxItem(item2).TagFloat;
+  if s < 0 then
+    result := 1
+  else if s > 0 then
+    result := -1
+  else
+    result := 0;
+end;
+
+function TForm1.SingleSortS(item1, item2: TFmxObject): integer;
+var
+  s: Single;
+begin
+  s := TListBoxItem(item1).TagFloat - TListBoxItem(item2).TagFloat;
+  if s > 0 then
+    result := 1
+  else if s < 0 then
+    result := -1
+  else
+    result := 0;
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);

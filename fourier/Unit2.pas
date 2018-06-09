@@ -3,7 +3,8 @@ unit Unit2;
 interface
 
 uses
-  FMX.Graphics, FMX.Types, System.UITypes, System.Types, Math;
+  FMX.Graphics, FMX.Types, System.UITypes, System.Types, System.Math,
+  System.SysUtils;
 
 type
   TBinary = array of array of integer;
@@ -11,6 +12,8 @@ type
   TRGBData = record
     R, G, B, A: Byte;
   end;
+
+  TFourier = class;
 
   TModel = class
   const
@@ -42,6 +45,27 @@ type
   public
     X, Y: array [0 .. MAX_POINT - 1] of Single;
     Count: integer;
+  end;
+
+  TNueralNet = class
+  const
+    MAX_INPUT = 60;
+    MAX_HIDDEN = 60;
+    MAX_OUTPUT = 60;
+  private
+    u, v: array [0 .. MAX_INPUT, 0 .. MAX_OUTPUT] of Single;
+    xu: array [0 .. 2 * TModel.MAX_REPRESENTATIVE] of Single;
+    zu: array [0 .. 9] of Single;
+    procedure recogNN;
+  public
+    numInput, numHidden, numOutput: integer;
+    eta: Single;
+    xx, yy: array of array of Single;
+    models: array of TModel;
+    cadidateNo: array [0..9] of integer;
+    constructor Create;
+    procedure learnBP3(numEntry, numRepeat: integer);
+    procedure recognition(test: integer);
   end;
 
   TFourier = class
@@ -507,6 +531,155 @@ begin
     3:
       FImag2[X] := Value;
   end;
+end;
+
+{ TNueralNet }
+
+constructor TNueralNet.Create;
+begin
+  inherited;
+  eta := 0.3;
+  numHidden := 10;
+  numInput := 10;
+  numOutput := 10;
+end;
+
+procedure TNueralNet.learnBP3(numEntry, numRepeat: integer);
+var
+  i: integer;
+  teacher: array [0 .. MAX_OUTPUT, 0 .. TFourier.MAX_ENTRY] of Single;
+  yy: array [0 .. MAX_INPUT, 0 .. TFourier.MAX_ENTRY] of Single;
+  zz: array [0 .. MAX_OUTPUT, 0 .. TFourier.MAX_ENTRY] of Single;
+  delta: array [0 .. MAX_OUTPUT, 0 .. TFourier.MAX_ENTRY] of Single;
+  sigma: array [0 .. MAX_ENTRY] of Single;
+  j: integer;
+  cnt: integer;
+  k: integer;
+  sumX, sumY, ss: Single;
+begin
+  for i := 0 to numEntry - 1 do
+    for j := 0 to numOutput - 1 do
+      if j = StrToInt(models[i].name) then
+        teacher[j, i] := 1.0
+      else
+        teacher[j, i] := 0;
+  for j := 0 to numHidden - 1 do
+  begin
+    Randomize;
+    for i := 0 to numInput - 1 do
+      u[i, j] := 2 * (Random - 0.5);
+  end;
+  for j := 0 to numOutput - 1 do
+  begin
+    Randomize;
+    for i := 0 to numHidden - 1 do
+      v[i, j] := 2 * (Random - 0.5);
+  end;
+  for i := 0 to numEntry - 1 do
+  begin
+    xx[0, i] := 1;
+    yy[0, i] := 1;
+    for j := 1 to numHidden - 1 do
+      yy[j, i] := 0;
+  end;
+  cnt := 0;
+  while cnt <= numRepeat do
+  begin
+    for i := 1 to numHidden - 1 do
+      for j := 0 to numEntry - 1 do
+      begin
+        sumX := 0;
+        for k := 0 to numInput - 1 do
+          sumX := sumX + u[k, i] * xx[k, j];
+        yy[i, j] := 1 / (1 + EXP(-sumX));
+      end;
+    for i := 0 to numOutput - 1 do
+    begin
+      for j := 0 to numEntry - 1 do
+      begin
+        sumY := 0;
+        for k := 1 to numHidden - 1 do
+          sumY := sumY + v[k, i] * yy[k, j];
+        zz[i, j] := 1 / (1 + EXP(-sumY));
+        delta[i, j] := (teacher[i, j] - zz[i, j]) * zz[i, j] * (1 - zz[i, j]);
+      end;
+      for j := 0 to numHidden - 1 do
+        for k := 0 to numEntry - 1 do
+          v[j, i] := eta * delta[i, k] * yy[j, k];
+    end;
+    for i := 1 to numHidden - 1 do
+    begin
+      for k := 0 to numEntry - 1 do
+      begin
+        ss := 0;
+        for j := 0 to numOutput - 1 do
+          ss := ss + delta[j, k] * v[i, j];
+        sigma[k] := ss * yy[i, k] * (1 - yy[i, k]);
+      end;
+      for j := 0 to numInput - 1 do
+        for k := 0 to numEntry - 1 do
+          u[j, i] := eta * sigma[k] * xx[j, k];
+    end;
+    inc(cnt);
+  end;
+end;
+
+procedure TNueralNet.recognition(test: integer);
+var
+  s: TModel;
+  i: integer;
+begin
+  s := models[test];
+  for i := 0 to s.numDescriptor - 1 do
+  begin
+    xu[1 + 2 * (i - 1)] := Abs(s.coReal1[i] * s.coReal1[i] + s.coImag1[i] *
+      s.coImag1[i]);
+    xu[2 + 2 * (i - 1)] := Abs(s.coReal2[i] * s.coReal2[i] + s.coImag1[i] *
+      s.coImag2[i]);
+  end;
+end;
+
+procedure TNueralNet.recogNN;
+var
+  xsum, ysum: Single;
+  yu: array [0 .. MAX_HIDDEN] of Single;
+  max: Single;
+  i: integer;
+  j: integer;
+begin
+  for i := 0 to numHidden - 1 do
+  begin
+    xsum := u[0, i];
+    for j := 0 to numInput - 1 do
+      xsum := xsum + u[j, i] * xu[j];
+    yu[i] := 1 / (1 + EXP(-xsum));
+  end;
+  for i := 0 to numOutput - 1 do
+  begin
+    ysum := v[0, 1];
+    for j := 0 to numHidden - 1 do
+      ysum := ysum + v[j, i] * yu[j];
+    zu[i] := 1 / (1 + EXP(-ysum));
+  end;
+  max:=-1;
+  for i := 0 to numOutput-1 do
+    if max < zu[i] then
+    begin
+      max:=zu[i];
+      cadidateNo[0]:=max;
+    end;
+  for i := 0 to numOutput-1 do
+    if (max < zu[i])and(zu[i] <> cadidateNo[0]) then
+    begin
+      max:=zu[i];
+      cadidateNo[1]:=max;
+    end;
+  for i := 0 to numOutput-1 do
+    if (max < zu[i])and(zu[i] <> cadidateNo[0])and(zu[i] <> cadidateNo[1]) then
+    begin
+      max:=zu[i];
+      cadidateNo[2]:=max;
+    end;
 end;
 
 end.

@@ -196,7 +196,7 @@ begin
         if labelborder8(nx, ny, i, j, code, numRect, id) = true then
           inc(numRect)
         else
-          SetnumEntry(numEntry-1);
+          SetnumEntry(numEntry - 1);
       end
       else if farr[i + 1, j] = 0 then
       begin
@@ -231,7 +231,7 @@ begin
   i2 := 0;
   j2 := 0;
   ii := 0;
-  SetnumEntry(cnt+1);
+  SetnumEntry(cnt + 1);
   boundary[cnt].Count := 0;
   while (i2 <> X) or (j2 <> Y) do
   begin
@@ -329,8 +329,8 @@ begin
       j1 := j2;
       if ii < TBoundary.MAX_POINT then
       begin
-        boundary[cnt].X[ii] := i1;
-        boundary[cnt].Y[ii] := j1;
+        boundary[cnt].X[ii] := i1 - ar[cnt].Left + 5;
+        boundary[cnt].Y[ii] := j1 - ar[cnt].Top + 5;
         inc(boundary[cnt].Count);
       end
       else

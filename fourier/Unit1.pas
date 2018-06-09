@@ -73,8 +73,6 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure CameraComponent1SampleBufferReady(Sender: TObject;
       const ATime: Int64);
-    procedure Image4MouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Single);
     procedure Button3Click(Sender: TObject);
     procedure Button5Click(Sender: TObject);
   private
@@ -114,15 +112,20 @@ procedure TForm1.Image1MouseDown(Sender: TObject; Button: TMouseButton;
 var
   r, rr: TRectF;
   i: integer;
-  cnt: integer;
-  j: integer;
-  a, b: array of Single;
+  s: TFourier;
 begin
-  Image2.Canvas.BeginScene;
-  for i := 0 to Fourier.MAX_RECT - 1 do
+  if Sender = Image1 then
+    s := Fourier
+  else
+    s := recg;
+  with Sender as TImage do
   begin
-    r := RectF(Fourier.ar[i].Left, Fourier.ar[i].Top, Fourier.ar[i].Right,
-      Fourier.ar[i].Bottom);
+    Bitmap.BitmapScale := Width / Bitmap.Width;
+  end;
+  TImage(Sender).Canvas.BeginScene;
+  for i := 0 to s.numEntry - 1 do
+  begin
+    r := RectF(s.ar[i].Left, s.ar[i].Top, s.ar[i].Right, s.ar[i].Bottom);
     if (X > r.Left) and (X < r.Right) and (Y > r.Top) and (Y < r.Bottom) then
     begin
       if r.Width < r.Height then
@@ -135,29 +138,35 @@ begin
         rr.Width := r.Width;
         rr.Height := r.Height * rr.Width / r.Width;
       end;
-      // rr.Left := (Image2.Width - rr.Width) / 2;
-      // rr.Top := (Image2.Height - rr.Height) / 2;
-      Fourier.rIndex := i;
-      Image2.Canvas.FillRect(Image2.BoundsRect, 0, 0, [], 1.0);
-      Image2.Canvas.DrawBitmap(Image1.Bitmap, r, rr, 1.0);
+      s.rIndex := i;
+      if Sender = Image1 then
+      begin
+        Image2.Canvas.BeginScene;
+        Image2.Canvas.FillRect(Image2.BoundsRect, 0, 0, [], 1.0);
+        Image2.Canvas.DrawBitmap(Image1.Bitmap, r, rr, 1.0);
+        Image2.Canvas.EndScene;
+      end
+      else
+      begin
+        Image3.Canvas.BeginScene;
+        Image3.Canvas.FillRect(Image3.BoundsRect, 0, 0, [], 1);
+        Image3.Canvas.DrawBitmap(Image4.Bitmap, r, rr, 1);
+        Image3.Canvas.EndScene;
+      end;
       break;
     end;
   end;
-  Image2.Canvas.EndScene;
-  Edit4.SetFocus;
-end;
-
-procedure TForm1.Image4MouseDown(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Single);
-begin
-  recognition;
+  TImage(Sender).Canvas.EndScene;
+  if Sender = Image1 then
+    Edit4.SetFocus
+  else
+    recognition;
 end;
 
 procedure TForm1.recognition;
 var
   dist: Single;
   i: integer;
-  id: array of integer;
   a, b: array of Single;
   estima: array of Single;
   X, Y, wr, wi: array [0 .. TBoundary.MAX_POINT] of Single;
@@ -167,117 +176,107 @@ var
   fr, fi, cc, ss: Single;
   bnd: TBoundary;
 begin
-  SetLength(a, 4 * Fourier.numDescriptor);
-  SetLength(b, 4 * Fourier.numDescriptor);
-  SetLength(id, Fourier.numEntry);
-  SetLength(estima, Fourier.numEntry);
-  test := TModel.Create;
-  try
-    bnd := Fourier.boundary[Fourier.rIndex];
-    n := bnd.Count;
+  SetLength(a, 4 * recg.numDescriptor);
+  SetLength(b, 4 * recg.numDescriptor);
+  SetLength(estima, recg.numEntry);
+  bnd := recg.boundary[recg.rIndex];
+  test := recg.model[recg.rIndex];
+  n := bnd.Count;
+  for i := 0 to recg.numDescriptor - 1 do
+  begin
+    test.coReal1[i] := 0;
+    test.coImag1[i] := 0;
+    test.coReal2[i] := 0;
+    test.coImag2[i] := 0;
+    for j := 0 to bnd.Count - 1 do
+    begin
+      fr := bnd.X[j + 1] - bnd.X[j];
+      fi := bnd.Y[j + 1] - bnd.Y[j];
+      cc := cos(2 * pi * i * j / n);
+      ss := sin(2 * pi * i * j / n);
+      test.coReal1[i] := test.coReal1[i] + fr * cc + fi * ss;
+      test.coImag1[i] := test.coImag1[i] - fr * ss + fi * cc;
+      test.coReal2[i] := test.coReal2[i] + fr * cc - fi * ss;
+      test.coImag2[i] := test.coImag2[i] + fr * ss + fi * cc;
+    end;
+    test.coReal1[i] := test.coReal1[i] / n;
+    test.coImag1[i] := test.coImag1[i] / n;
+    test.coReal2[i] := test.coReal2[i] / n;
+    test.coImag2[i] := test.coImag2[i] / n;
+  end;
+  X[0] := bnd.X[0];
+  Y[0] := bnd.Y[0];
+  for i := 0 to bnd.Count - 1 do
+  begin
+    wr[i] := 0;
+    wi[i] := 0;
+    for j := 0 to recg.numDescriptor - 1 do
+    begin
+      cc := cos(2 * pi * i * j / n);
+      ss := sin(2 * pi * i * j / n);
+      wr[i] := wr[i] + test.coReal1[j] * cc - test.coImag1[j] * ss +
+        test.coReal2[j] * cc + test.coImag2[j] * ss;
+      wi[i] := wi[i] + test.coReal1[j] * ss + test.coImag1[j] * cc -
+        test.coReal2[j] * ss + test.coImag2[j] * cc;
+    end;
+  end;
+  Image3.Canvas.BeginScene;
+  Image3.Canvas.FillRect(Image3.BoundsRect, 0, 0, [], 1);
+  Image3.Canvas.DrawRect(Image3.BoundsRect, 0, 0, [], 1);
+  for i := 1 to bnd.Count - 1 do
+  begin
+    X[i] := X[i - 1] + wr[i - 1];
+    Y[i] := Y[i - 1] + wi[i - 1];
+    Image3.Canvas.DrawLine(PointF(X[i - 1], Y[i - 1]), PointF(X[i], Y[i]), 1);
+  end;
+  Image3.Canvas.EndScene;
+  cnt := 0;
+  for i := 0 to recg.numDescriptor - 1 do
+  begin
+    a[cnt] := test.coReal1[i];
+    a[recg.numDescriptor + cnt] := test.coImag1[i];
+    a[2 * recg.numDescriptor + cnt] := test.coReal2[i];
+    a[3 * recg.numDescriptor + cnt] := test.coImag2[i];
+    inc(cnt);
+  end;
+  for n := 0 to Fourier.numEntry - 1 do
+  begin
+    cnt := 0;
     for i := 0 to Fourier.numDescriptor - 1 do
     begin
-      test.coReal1[i] := 0;
-      test.coImag1[i] := 0;
-      test.coReal2[i] := 0;
-      test.coImag2[i] := 0;
-      for j := 0 to n - 1 do
-      begin
-        fr := bnd.X[j + 1] - bnd.X[j];
-        fi := bnd.Y[j + 1] - bnd.Y[j];
-        cc := cos(2 * pi * i * j / n);
-        ss := sin(2 * pi * i * j / n);
-        test.coReal1[i] := test.coReal1[i] + fr * cc + fi * ss;
-        test.coImag1[i] := test.coImag1[i] - fr * ss + fi * cc;
-        test.coReal2[i] := test.coReal2[i] + fr * cc - fi * ss;
-        test.coImag2[i] := test.coImag2[i] + fr * ss + fi * cc;
-      end;
-      test.coReal1[i] := test.coReal1[i] / n;
-      test.coImag1[i] := test.coImag1[i] / n;
-      test.coReal2[i] := test.coReal2[i] / n;
-      test.coImag2[i] := test.coImag2[i] / n;
-    end;
-    X[0] := bnd.X[0];
-    Y[0] := bnd.Y[0];
-    for i := 0 to n - 1 do
-    begin
-      wr[i] := 0;
-      wi[i] := 0;
-      for j := 1 to Fourier.numDescriptor do
-      begin
-        cc := cos(2 * pi * i * j / n);
-        ss := sin(2 * pi * i * j / n);
-        wr[i] := wr[i] + test.coReal1[j] * cc + test.coImag1[j] * ss +
-          test.coReal2[j] * cc + test.coImag2[j] * ss;
-        wi[i] := wi[i] + test.coReal1[j] * ss + test.coImag1[j] * cc -
-          test.coReal2[j] * ss + test.coImag2[j] * cc;
-      end;
-    end;
-    Image3.Canvas.BeginScene;
-    Image3.Canvas.FillRect(Image3.BoundsRect, 0, 0, [], 1);
-    Image3.Canvas.DrawRect(Image3.BoundsRect, 0, 0, [], 1);
-    for i := 1 to n - 1 do
-    begin
-      X[i] := X[i - 1] + wr[i];
-      Y[i] := Y[i - 1] + wi[i];
-      Image3.Canvas.DrawLine(PointF(X[i], Y[i]), PointF(X[i - 1], Y[i - 1]), 1);
-    end;
-    Image3.Canvas.EndScene;
-    for i := 0 to Fourier.numEntry - 1 do
-      id[i] := i;
-    cnt := 0;
-    for i := 1 to Fourier.numDescriptor do
-    begin
-      a[cnt] := test.coReal1[i];
-      a[Fourier.numDescriptor + cnt] := test.coImag1[i];
-      a[2 * Fourier.numDescriptor + cnt] := test.coReal2[i];
-      a[3 * Fourier.numDescriptor + cnt] := test.coImag2[i];
+      b[cnt] := Fourier.model[n].coImag1[i];
+      b[recg.numDescriptor + cnt] := Fourier.model[n].coImag1[i];
+      b[2 * recg.numDescriptor + cnt] := Fourier.model[n].coReal2[i];
+      b[3 * recg.numDescriptor + cnt] := Fourier.model[n].coImag2[i];
       inc(cnt);
     end;
-    for n := 0 to Fourier.numEntry - 1 do
-    begin
-      cnt := 0;
-      for i := 1 to Fourier.numDescriptor do
-      begin
-        b[cnt] := Fourier.model[n].coImag1[i];
-        b[2 * Fourier.numDescriptor + cnt] := Fourier.model[n].coImag1[i];
-        b[3 * Fourier.numDescriptor + cnt] := Fourier.model[n].coReal2[i];
-        b[4 * Fourier.numDescriptor + cnt] := Fourier.model[n].coImag2[i];
-        inc(cnt);
-      end;
-      if RadioButton1.IsChecked = true then
-      begin
-        dist := 0;
-        for i := 0 to 4 * Fourier.numDescriptor - 1 do
-          dist := dist + (a[i] - b[i]) * (a[i] - b[i]);
-        estima[n] := Sqrt(dist);
-      end
-      else
-        estima[n] := Fourier.Correlation(a, b, 4 * Fourier.numDescriptor);
-    end;
     if RadioButton1.IsChecked = true then
-      Fourier.sortingSmall(estima, id, Fourier.numEntry)
-    else
-      Fourier.sortingBig(estima, id, Fourier.numEntry);
-    ListBox1.Items.Clear;
-    i := 0;
-    while (i < 5) and (i < Fourier.numEntry) do
     begin
-      j := ListBox1.Items.Add('(' + Fourier.model[i].name + ')' +
-        estima[i].ToString);
-      ListBox1.ListItems[j].TagFloat := estima[i];
-      inc(i);
-    end;
-    if RadioButton1.IsChecked = true then
-      ListBox1.Sort(SingleSortS)
+      dist := 0;
+      for i := 0 to 4 * recg.numDescriptor - 1 do
+        dist := dist + (a[i] - b[i]) * (a[i] - b[i]);
+      estima[n] := Sqrt(dist);
+    end
     else
-      ListBox1.Sort(SingleSortL);
-  finally
-    Finalize(a);
-    Finalize(b);
-    Finalize(estima);
-    test.Free;
+      estima[n] := recg.Correlation(a, b, 4 * recg.numDescriptor);
   end;
+  ListBox1.Items.Clear;
+  i := 0;
+  for i := 0 to recg.numEntry - 1 do
+  begin
+    j := ListBox1.Items.Add('(' + Fourier.model[i].name + ')' +
+      estima[i].ToString);
+    ListBox1.ListItems[j].TagFloat := estima[i];
+  end;
+  if RadioButton1.IsChecked = true then
+    ListBox1.Sort(SingleSortS)
+  else
+    ListBox1.Sort(SingleSortL);
+  for i := ListBox1.Items.Count - 1 downto 5 do
+    ListBox1.Items.Delete(i);
+  Finalize(a);
+  Finalize(b);
+  Finalize(estima);
 end;
 
 procedure TForm1.ToolbarCloseButtonClick(Sender: TObject);
@@ -314,8 +313,8 @@ begin
   Fourier.numDescriptor := Edit5.Text.ToInteger;
   if Fourier.numDescriptor > 50 then
   begin
-    Fourier.numDescriptor:=50;
-    Edit5.Text:='50';
+    Fourier.numDescriptor := 50;
+    Edit5.Text := '50';
   end;
   for i := 0 to Fourier.numEntry - 1 do
   begin
@@ -364,6 +363,7 @@ begin
   Image4.Bitmap.Assign(back);
   recg.BinaryGray(Image4.Bitmap, thBinary, true);
   recg.DetectArea(Image4.Bitmap);
+  recg.numDescriptor := Fourier.numDescriptor;
   TabControl1.TabIndex := 2;
 end;
 

@@ -18,7 +18,8 @@ type
     MAX_REPRESENTATIVE = 50;
     MAX_INPUT = MAX_REPRESENTATIVE;
     MAX_HIDDEN = 60;
-    MAX_OUTPUT = MAX_ENTRY;
+    MAX_OUTPUT = 100;
+    MAX_BATCH = 50;
     MAX_POINT = 1000;
   end;
 
@@ -50,6 +51,8 @@ type
   end;
 
   TNueralNet = class
+  type
+    TItem = array of array of Single;
   private
     numInput, numOutput: integer;
     u, v: array [0 .. TMAX_PARAM.MAX_INPUT, 0 .. TMAX_PARAM.MAX_OUTPUT]
@@ -59,10 +62,11 @@ type
     teachLabels: array [0 .. TMAX_PARAM.MAX_OUTPUT] of string;
     procedure recogNN;
     procedure teachLabel(const name: array of string);
+    function check: Boolean;
+    procedure convert(var X: TItem);
   public
     numHidden, numEntry: integer;
     eta: Single;
-    xx, yy: array of array of Single;
     models: array of TModel;
     cadidateNo: array [0 .. 9] of integer;
     constructor Create;
@@ -86,6 +90,7 @@ type
     function labelborder8(nx, ny, X, Y, code, cnt: integer;
       id: TBinary): Boolean;
     procedure SetnumEntry(const Value: integer);
+    procedure calfourierC(model: TModel; boundary: TBoundary);
   public
     color: TAlphaColor;
     ar: array [0 .. TMAX_PARAM.MAX_RECT - 1] of TRect;
@@ -110,6 +115,7 @@ type
     procedure sortingBig(A: array of Single; id: array of integer; n: integer);
     procedure recognition;
     function select(X, Y: Single): integer;
+    procedure preProcess;
   end;
 
 implementation
@@ -383,42 +389,29 @@ begin
   result := not((ar[cnt].Width < minWidth) or (ar[cnt].Height < minHeight));
 end;
 
+procedure TFourier.preProcess;
+var
+  i: integer;
+begin
+  for i := 0 to numEntry - 1 do
+    calfourierC(model[i], boundary[i]);
+end;
+
 procedure TFourier.recognition;
 var
-  fr, fi, cc, ss: Single;
   test: TModel;
   s: TBoundary;
   wr, wi: array [0 .. TMAX_PARAM.MAX_POINT] of Single;
   i, j, n: integer;
+  ss, cc: Single;
 begin
   s := boundary[rIndex];
   test := model[rIndex];
-  n := s.Count;
-  for i := 0 to numDescriptor - 1 do
-  begin
-    test.coReal1[i] := 0;
-    test.coImag1[i] := 0;
-    test.coReal2[i] := 0;
-    test.coImag2[i] := 0;
-    for j := 0 to s.Count - 1 do
-    begin
-      fr := s.X[j + 1] - s.X[j];
-      fi := s.Y[j + 1] - s.Y[j];
-      cc := cos(2 * pi * i * j / n);
-      ss := sin(2 * pi * i * j / n);
-      test.coReal1[i] := test.coReal1[i] + fr * cc + fi * ss;
-      test.coImag1[i] := test.coImag1[i] - fr * ss + fi * cc;
-      test.coReal2[i] := test.coReal2[i] + fr * cc - fi * ss;
-      test.coImag2[i] := test.coImag2[i] + fr * ss + fi * cc;
-    end;
-    test.coReal1[i] := test.coReal1[i] / n;
-    test.coImag1[i] := test.coImag1[i] / n;
-    test.coReal2[i] := test.coReal2[i] / n;
-    test.coImag2[i] := test.coImag2[i] / n;
-  end;
+  calfourierC(test, s);
   bnd.Count := s.Count;
   bnd.X[0] := s.X[0];
   bnd.Y[0] := s.Y[0];
+  n := s.Count;
   for i := 0 to s.Count - 1 do
   begin
     wr[i] := 0;
@@ -526,6 +519,36 @@ begin
   end;
 end;
 
+procedure TFourier.calfourierC(model: TModel; boundary: TBoundary);
+var
+  i, j, n: integer;
+  fr, fi, ss, cc: Single;
+begin
+  n := boundary.Count;
+  for i := 0 to numDescriptor - 1 do
+  begin
+    model.coReal1[i] := 0;
+    model.coImag1[i] := 0;
+    model.coReal2[i] := 0;
+    model.coImag2[i] := 0;
+    for j := 0 to boundary.Count - 1 do
+    begin
+      fr := boundary.X[j + 1] - boundary.X[j];
+      fi := boundary.Y[j + 1] - boundary.Y[j];
+      cc := cos(2 * pi * i * j / n);
+      ss := sin(2 * pi * i * j / n);
+      model.coReal1[i] := model.coReal1[i] + fr * cc + fi * ss;
+      model.coImag1[i] := model.coImag1[i] - fr * ss + fi * cc;
+      model.coReal2[i] := model.coReal2[i] + fr * cc - fi * ss;
+      model.coImag2[i] := model.coImag2[i] + fr * ss + fi * cc;
+    end;
+    model.coReal1[i] := model.coReal1[i] / n;
+    model.coImag1[i] := model.coImag1[i] / n;
+    model.coReal2[i] := model.coReal2[i] / n;
+    model.coImag2[i] := model.coImag2[i] / n;
+  end;
+end;
+
 procedure TFourier.Clear;
 var
   i: integer;
@@ -622,6 +645,21 @@ end;
 
 { TNueralNet }
 
+function TNueralNet.check: Boolean;
+begin
+  result := (numEntry mod 10) = 0;
+end;
+
+procedure TNueralNet.convert(var X: TItem);
+var
+  i: integer;
+  j: integer;
+begin
+  for i := 0 to TMAX_PARAM.MAX_BATCH - 1 do
+    for j := 0 to 9 do
+
+end;
+
 constructor TNueralNet.Create;
 begin
   inherited;
@@ -633,12 +671,13 @@ end;
 procedure TNueralNet.learnBP3(batch, numRepeat: integer);
 var
   i: integer;
-  yy: array [0 .. TMAX_PARAM.MAX_INPUT, 0 .. TMAX_PARAM.MAX_ENTRY] of Single;
-  zz: array [0 .. TMAX_PARAM.MAX_OUTPUT, 0 .. TMAX_PARAM.MAX_ENTRY] of Single;
-  delta: array [0 .. TMAX_PARAM.MAX_OUTPUT, 0 .. TMAX_PARAM.MAX_ENTRY]
+  xx, yy: array [0 .. TMAX_PARAM.MAX_INPUT, 0 .. TMAX_PARAM.MAX_BATCH]
+    of Single;
+  zz: array [0 .. TMAX_PARAM.MAX_OUTPUT, 0 .. TMAX_PARAM.MAX_BATCH] of Single;
+  delta: array [0 .. TMAX_PARAM.MAX_OUTPUT, 0 .. TMAX_PARAM.MAX_BATCH]
     of Single;
   sigma: array [0 .. TMAX_PARAM.MAX_ENTRY] of Single;
-  teacher: array [0 .. TMAX_PARAM.MAX_OUTPUT, 0 .. TMAX_PARAM.MAX_ENTRY]
+  teacher: array [0 .. TMAX_PARAM.MAX_OUTPUT, 0 .. TMAX_PARAM.MAX_BATCH]
     of Single;
   j: integer;
   cnt: integer;

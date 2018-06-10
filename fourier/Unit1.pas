@@ -211,11 +211,6 @@ begin
 end;
 
 procedure TForm1.Button4Click(Sender: TObject);
-var
-  i, n, m: integer;
-  j: integer;
-  k: integer;
-  fr, fi, ss, cc: Single;
 begin
   Fourier.numDescriptor := Edit5.Text.ToInteger;
   if Fourier.numDescriptor > 50 then
@@ -223,47 +218,7 @@ begin
     Fourier.numDescriptor := 50;
     Edit5.Text := '50';
   end;
-  for i := 0 to Fourier.numEntry - 1 do
-  begin
-    n := Fourier.boundary[i].Count;
-    for j := 0 to Fourier.numDescriptor - 1 do
-    begin
-      with Fourier.model[i] do
-      begin
-        coReal1[j] := 0;
-        coReal2[j] := 0;
-        coImag1[j] := 0;
-        coImag2[j] := 0;
-      end;
-      with Fourier.boundary[i] do
-      begin
-        m := Count div n;
-        X[n * m] := X[0];
-        Y[n * m] := Y[0];
-      end;
-      for k := 0 to n - 1 do
-      begin
-        fr := Fourier.boundary[i].X[(k + 1) * m] - Fourier.boundary[i].X[k * m];
-        fi := Fourier.boundary[i].Y[(k + 1) * m] - Fourier.boundary[i].Y[k * m];
-        cc := cos(2 * pi * j * k / n);
-        ss := sin(2 * pi * j * k / n);
-        with Fourier.model[i] do
-        begin
-          coReal1[j] := coReal1[j] + fr * cc + fi * ss;
-          coReal2[j] := coReal2[j] - fr * ss + fi * cc;
-          coImag1[j] := coImag1[j] + fr * cc - fi * ss;
-          coImag2[j] := coImag2[j] + fr * ss + fi * cc;
-        end;
-      end;
-      with Fourier.model[i] do
-      begin
-        coReal1[j] := coReal1[j] / n;
-        coReal2[j] := coReal2[j] / n;
-        coImag1[j] := coImag1[j] / n;
-        coImag2[j] := coImag2[j] / n;
-      end;
-    end;
-  end;
+  Fourier.preProcess;
   thBinary := Edit3.Text.ToInteger;
   recg.minWidth := Edit1.Text.ToInteger;
   recg.minHeight := Edit2.Text.ToInteger;

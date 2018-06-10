@@ -2598,7 +2598,7 @@ object Form1: TForm1
         Position.X = 501.000000000000000000
         Position.Y = 146.000000000000000000
         TabOrder = 2
-        Text = 'Button3'
+        Text = #38283#12367
         OnClick = Button3Click
       end
     end

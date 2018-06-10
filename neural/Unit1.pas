@@ -3,9 +3,12 @@ unit Unit1;
 interface
 
 uses
-  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Ani, FMX.Layouts, FMX.Gestures,
-  FMX.StdCtrls, FMX.Media, FMX.Objects, FMX.TabControl, FMX.Graphics, Unit2;
+  System.SysUtils, System.Types, System.UITypes, System.Classes,
+  System.Variants,
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Ani, FMX.Layouts,
+  FMX.Gestures,
+  FMX.StdCtrls, FMX.Media, FMX.Objects, FMX.TabControl, FMX.Graphics, Unit2,
+  FMX.TextLayout;
 
 type
   TForm1 = class(TForm)
@@ -30,8 +33,8 @@ type
     OpenDialog1: TOpenDialog;
     Button3: TButton;
     procedure ToolbarCloseButtonClick(Sender: TObject);
-    procedure FormGesture(Sender: TObject;
-      const EventInfo: TGestureEventInfo; var Handled: Boolean);
+    procedure FormGesture(Sender: TObject; const EventInfo: TGestureEventInfo;
+      var Handled: Boolean);
     procedure FormKeyDown(Sender: TObject; var Key: Word; var KeyChar: Char;
       Shift: TShiftState);
     procedure CameraComponent1SampleBufferReady(Sender: TObject;
@@ -61,8 +64,8 @@ implementation
 
 {$R *.fmx}
 
-procedure TForm1.FormKeyDown(Sender: TObject; var Key: Word;
-  var KeyChar: Char; Shift: TShiftState);
+procedure TForm1.FormKeyDown(Sender: TObject; var Key: Word; var KeyChar: Char;
+  Shift: TShiftState);
 begin
   if Key = vkEscape then
     ShowToolbar(not ToolbarPopup.IsOpen);
@@ -71,10 +74,28 @@ end;
 procedure TForm1.Image1Paint(Sender: TObject; Canvas: TCanvas;
   const ARect: TRectF);
 var
-  i: Integer;
+  i, j: Integer;
+  s: TTextLayout;
 begin
-  for i := 0 to obj.numRect-1 do
-    Image1.Bitmap.Canvas
+  j := 0;
+  s := TTextLayoutManager.DefaultTextLayout.Create;
+  try
+    for i := 0 to obj.numRect - 1 do
+    begin
+      if j > 9 then
+        dec(j, 10);
+      s.BeginUpdate;
+      s.Font.Size := 20;
+      s.Color := TAlphaColors.Blue;
+      s.Text := j.ToString;
+      s.TopLeft := PointF(obj.ar[i].Left, obj.ar[i].Top);
+      s.EndUpdate;
+      s.RenderLayout(Canvas);
+      inc(j);
+    end;
+  finally
+    s.Free;
+  end;
 end;
 
 procedure TForm1.ToolbarCloseButtonClick(Sender: TObject);
@@ -85,10 +106,10 @@ end;
 procedure TForm1.Button1Click(Sender: TObject);
 begin
   Image1.Bitmap.Assign(buf1);
-  obj.minWidth:=2;
-  obj.minHeight:=5;
-  obj.color:=TAlphaColors.Red;
-  obj.BinaryGray(Image1.Bitmap,77,true);
+  obj.minWidth := 2;
+  obj.minHeight := 5;
+  obj.Color := TAlphaColors.Red;
+  obj.BinaryGray(Image1.Bitmap, 77, true);
   obj.DetectArea(Image1.Bitmap);
   obj.sortingPos;
 end;
@@ -108,17 +129,17 @@ var
   bmp: TBitmap;
 begin
   if TabControl1.TabIndex = 0 then
-    bmp:=Image2.Bitmap
+    bmp := Image2.Bitmap
   else
-    bmp:=Image1.Bitmap;
-  CameraComponent1.SampleBufferToBitmap(bmp,true);
+    bmp := Image1.Bitmap;
+  CameraComponent1.SampleBufferToBitmap(bmp, true);
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  obj:=TFourier.Create;
-  buf1:=TBitmap.Create;
-  buf2:=TBitmap.Create;
+  obj := TFourier.Create;
+  buf1 := TBitmap.Create;
+  buf2 := TBitmap.Create;
   buf1.Assign(Image1.Bitmap);
 end;
 
@@ -132,19 +153,20 @@ end;
 procedure TForm1.FormGesture(Sender: TObject;
   const EventInfo: TGestureEventInfo; var Handled: Boolean);
 var
-  DX, DY : Single;
+  DX, DY: Single;
 begin
   if EventInfo.GestureID = igiPan then
   begin
-    if (TInteractiveGestureFlag.gfBegin in EventInfo.Flags)
-      and ((Sender = ToolbarPopup)
-        or (EventInfo.Location.Y > (ClientHeight - 70))) then
+    if (TInteractiveGestureFlag.gfBegin in EventInfo.Flags) and
+      ((Sender = ToolbarPopup) or (EventInfo.Location.Y > (ClientHeight - 70)))
+    then
     begin
       FGestureOrigin := EventInfo.Location;
-      FGestureInProgress := True;
+      FGestureInProgress := true;
     end;
 
-    if FGestureInProgress and (TInteractiveGestureFlag.gfEnd in EventInfo.Flags) then
+    if FGestureInProgress and (TInteractiveGestureFlag.gfEnd in EventInfo.Flags)
+    then
     begin
       FGestureInProgress := False;
       DX := EventInfo.Location.X - FGestureOrigin.X;
@@ -158,7 +180,9 @@ end;
 procedure TForm1.ShowToolbar(AShow: Boolean);
 begin
   ToolbarPopup.Width := ClientWidth;
-  ToolbarPopup.PlacementRectangle.Rect := TRectF.Create(0, ClientHeight-ToolbarPopup.Height, ClientWidth-1, ClientHeight-1);
+  ToolbarPopup.PlacementRectangle.Rect :=
+    TRectF.Create(0, ClientHeight - ToolbarPopup.Height, ClientWidth - 1,
+    ClientHeight - 1);
   ToolbarPopupAnimation.StartValue := ToolbarPopup.Height;
   ToolbarPopupAnimation.StopValue := 0;
 
@@ -167,8 +191,8 @@ end;
 
 procedure TForm1.SpeedButton1Click(Sender: TObject);
 begin
-  CameraComponent1.Active:=SpeedButton1.IsPressed;
-  if SpeedButton1.IsPressed = false then
+  CameraComponent1.Active := SpeedButton1.IsPressed;
+  if SpeedButton1.IsPressed = False then
     if TabControl1.TabIndex = 0 then
       buf2.Assign(Image2.Bitmap)
     else

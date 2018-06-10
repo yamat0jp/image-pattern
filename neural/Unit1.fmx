@@ -2594,6 +2594,13 @@ object Form1: TForm1
           Text = #23398#32722
         end
       end
+      object Button3: TButton
+        Position.X = 501.000000000000000000
+        Position.Y = 146.000000000000000000
+        TabOrder = 2
+        Text = 'Button3'
+        OnClick = Button3Click
+      end
     end
   end
   object Panel1: TPanel
@@ -2617,13 +2624,6 @@ object Form1: TForm1
     OnSampleBufferReady = CameraComponent1SampleBufferReady
     Left = 288
     Top = 248
-  end
-  object Button3: TButton
-    Position.X = 504.000000000000000000
-    Position.Y = 344.000000000000000000
-    TabOrder = 9
-    Text = 'Button3'
-    OnClick = Button3Click
   end
   object OpenDialog1: TOpenDialog
     Left = 408

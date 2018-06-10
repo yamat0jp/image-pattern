@@ -109,7 +109,7 @@ type
       n: integer);
     procedure sortingBig(A: array of Single; id: array of integer; n: integer);
     procedure recognition;
-    function select(X,Y: Single): integer;
+    function select(X, Y: Single): integer;
   end;
 
 implementation
@@ -172,9 +172,9 @@ begin
   SetnumEntry(1);
   bnd := TBoundary.Create;
   nn := TNueralNet.Create;
-  minWidth:=2;
-  minHeight:=5;
-  color:=TAlphaColors.Red;
+  minWidth := 2;
+  minHeight := 5;
+  color := TAlphaColors.Red;
 end;
 
 procedure TFourier.DetectArea(bmp: TBitmap);
@@ -443,14 +443,16 @@ end;
 function TFourier.select(X, Y: Single): integer;
 var
   i: integer;
-  r: TRect;
+  R: TRect;
 begin
+  result := 0;
   for i := 0 to numEntry - 1 do
   begin
-    r := Rect(ar[i].Left, ar[i].Top, ar[i].Right, ar[i].Bottom);
-    if (X > r.Left) and (X < r.Right) and (Y > r.Top) and (Y < r.Bottom) then
+    R := Rect(ar[i].Left, ar[i].Top, ar[i].Right, ar[i].Bottom);
+    if (X > R.Left) and (X < R.Right) and (Y > R.Top) and (Y < R.Bottom) then
     begin
       rIndex := i;
+      result := i;
       break;
     end;
   end;

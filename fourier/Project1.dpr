@@ -3,7 +3,7 @@ program Project1;
 uses
   FMX.Forms,
   Unit1 in 'Unit1.pas' {Form1},
-  Unit2 in 'Unit2.pas';
+  Unit2 in '..\unit\Unit2.pas';
 
 {$R *.res}
 

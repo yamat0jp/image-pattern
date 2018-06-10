@@ -109,54 +109,8 @@ end;
 
 procedure TForm1.Image1MouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Single);
-var
-  r, rr: TRectF;
-  i: integer;
-  s: TFourier;
 begin
-  if Sender = Image1 then
-    s := Fourier
-  else
-    s := recg;
-  with Sender as TImage do
-  begin
-    Bitmap.BitmapScale := Width / Bitmap.Width;
-  end;
-  TImage(Sender).Canvas.BeginScene;
-  for i := 0 to s.numEntry - 1 do
-  begin
-    r := RectF(s.ar[i].Left, s.ar[i].Top, s.ar[i].Right, s.ar[i].Bottom);
-    if (X > r.Left) and (X < r.Right) and (Y > r.Top) and (Y < r.Bottom) then
-    begin
-      if r.Width < r.Height then
-      begin
-        rr.Height := r.Height;
-        rr.Width := r.Width * rr.Height / r.Height;
-      end
-      else
-      begin
-        rr.Width := r.Width;
-        rr.Height := r.Height * rr.Width / r.Width;
-      end;
-      s.rIndex := i;
-      if Sender = Image1 then
-      begin
-        Image2.Canvas.BeginScene;
-        Image2.Canvas.FillRect(Image2.BoundsRect, 0, 0, [], 1.0);
-        Image2.Canvas.DrawBitmap(Image1.Bitmap, r, rr, 1.0);
-        Image2.Canvas.EndScene;
-      end
-      else
-      begin
-        Image3.Canvas.BeginScene;
-        Image3.Canvas.FillRect(Image3.BoundsRect, 0, 0, [], 1);
-        Image3.Canvas.DrawBitmap(Image4.Bitmap, r, rr, 1);
-        Image3.Canvas.EndScene;
-      end;
-      break;
-    end;
-  end;
-  TImage(Sender).Canvas.EndScene;
+  recg.select(X,Y);
   if Sender = Image1 then
     Edit4.SetFocus
   else

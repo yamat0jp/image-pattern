@@ -7,8 +7,6 @@ uses
   System.SysUtils;
 
 type
-  TBinary = array of array of integer;
-
   TRGBData = record
     R, G, B, A: Byte;
   end;
@@ -22,6 +20,12 @@ type
     MAX_HIDDEN = 60;
     MAX_OUTPUT = MAX_ENTRY;
     MAX_POINT = 1000;
+  end;
+
+  TBoundary = class
+  public
+    X, Y: array [0 .. TMAX_PARAM.MAX_POINT - 1] of Single;
+    Count: integer;
   end;
 
   TModel = class
@@ -45,17 +49,11 @@ type
       write SetcoParam;
   end;
 
-  TBoundary = class
-  public
-    X, Y: array [0 .. TMAX_PARAM.MAX_POINT - 1] of Single;
-    Count: integer;
-  end;
-
   TNueralNet = class
-  const
   private
     numInput, numOutput: integer;
-    u, v: array [0 .. TMAX_PARAM.MAX_INPUT, 0 .. TMAX_PARAM.MAX_OUTPUT] of Single;
+    u, v: array [0 .. TMAX_PARAM.MAX_INPUT, 0 .. TMAX_PARAM.MAX_OUTPUT]
+      of Single;
     xu: array [0 .. 2 * TMAX_PARAM.MAX_REPRESENTATIVE] of Single;
     zu: array [0 .. 9] of Single;
     teachLabels: array [0 .. TMAX_PARAM.MAX_OUTPUT] of string;
@@ -73,12 +71,13 @@ type
   end;
 
   TFourier = class
+  type
+    TBinary = array of array of integer;
   private
     FModels: array [0 .. TMAX_PARAM.MAX_ENTRY] of TModel;
     FBoundary: array [0 .. TMAX_PARAM.MAX_ENTRY] of TBoundary;
     FnumEntry: integer;
     farr: TBinary;
-    numRect: integer;
     function Getmodel(X: integer): TModel;
     function Getboundary(X: integer): TBoundary;
     function GetnumDescriptor: integer;
@@ -91,9 +90,10 @@ type
     color: TAlphaColor;
     ar: array [0 .. TMAX_PARAM.MAX_RECT - 1] of TRect;
     minWidth, minHeight: integer;
-    rIndex: integer;
+    numRect: integer;
     bnd: TBoundary;
     nn: TNueralNet;
+    rIndex: integer;
     constructor Create;
     destructor Destroy; override;
     property model[X: integer]: TModel read Getmodel;
@@ -109,6 +109,7 @@ type
       n: integer);
     procedure sortingBig(A: array of Single; id: array of integer; n: integer);
     procedure recognition;
+    function select(X,Y: Single): integer;
   end;
 
 implementation
@@ -171,6 +172,9 @@ begin
   SetnumEntry(1);
   bnd := TBoundary.Create;
   nn := TNueralNet.Create;
+  minWidth:=2;
+  minHeight:=5;
+  color:=TAlphaColors.Red;
 end;
 
 procedure TFourier.DetectArea(bmp: TBitmap);
@@ -436,6 +440,22 @@ begin
   end;
 end;
 
+function TFourier.select(X, Y: Single): integer;
+var
+  i: integer;
+  r: TRect;
+begin
+  for i := 0 to numEntry - 1 do
+  begin
+    r := Rect(ar[i].Left, ar[i].Top, ar[i].Right, ar[i].Bottom);
+    if (X > r.Left) and (X < r.Right) and (Y > r.Top) and (Y < r.Bottom) then
+    begin
+      rIndex := i;
+      break;
+    end;
+  end;
+end;
+
 procedure TFourier.sortingBig(A: array of Single; id: array of integer;
   n: integer);
 var
@@ -613,16 +633,18 @@ var
   i: integer;
   yy: array [0 .. TMAX_PARAM.MAX_INPUT, 0 .. TMAX_PARAM.MAX_ENTRY] of Single;
   zz: array [0 .. TMAX_PARAM.MAX_OUTPUT, 0 .. TMAX_PARAM.MAX_ENTRY] of Single;
-  delta: array [0 .. TMAX_PARAM.MAX_OUTPUT, 0 .. TMAX_PARAM.MAX_ENTRY] of Single;
+  delta: array [0 .. TMAX_PARAM.MAX_OUTPUT, 0 .. TMAX_PARAM.MAX_ENTRY]
+    of Single;
   sigma: array [0 .. TMAX_PARAM.MAX_ENTRY] of Single;
-  teacher: array [0 .. TMAX_PARAM.MAX_OUTPUT, 0 .. TMAX_PARAM.MAX_ENTRY] of Single;
+  teacher: array [0 .. TMAX_PARAM.MAX_OUTPUT, 0 .. TMAX_PARAM.MAX_ENTRY]
+    of Single;
   j: integer;
   cnt: integer;
   k: integer;
   sumX, sumY, ss: Single;
 begin
-  numInput:=models[0].numDescriptor;
-  numOutput:=numEntry;
+  numInput := models[0].numDescriptor;
+  numOutput := numEntry;
   for i := 0 to batch - 1 do
     for j := 0 to numOutput - 1 do
       if teachLabels[i] = models[i].name then

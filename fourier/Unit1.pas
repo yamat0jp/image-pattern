@@ -169,76 +169,30 @@ var
   i: integer;
   a, b: array of Single;
   estima: array of Single;
-  X, Y, wr, wi: array [0 .. TBoundary.MAX_POINT] of Single;
   n, cnt: integer;
-  test: TModel;
   j: integer;
-  fr, fi, cc, ss: Single;
-  bnd: TBoundary;
 begin
+  recg.recognition;
   SetLength(a, 4 * recg.numDescriptor);
   SetLength(b, 4 * recg.numDescriptor);
   SetLength(estima, recg.numEntry);
-  bnd := recg.boundary[recg.rIndex];
-  test := recg.model[recg.rIndex];
-  n := bnd.Count;
-  for i := 0 to recg.numDescriptor - 1 do
-  begin
-    test.coReal1[i] := 0;
-    test.coImag1[i] := 0;
-    test.coReal2[i] := 0;
-    test.coImag2[i] := 0;
-    for j := 0 to bnd.Count - 1 do
-    begin
-      fr := bnd.X[j + 1] - bnd.X[j];
-      fi := bnd.Y[j + 1] - bnd.Y[j];
-      cc := cos(2 * pi * i * j / n);
-      ss := sin(2 * pi * i * j / n);
-      test.coReal1[i] := test.coReal1[i] + fr * cc + fi * ss;
-      test.coImag1[i] := test.coImag1[i] - fr * ss + fi * cc;
-      test.coReal2[i] := test.coReal2[i] + fr * cc - fi * ss;
-      test.coImag2[i] := test.coImag2[i] + fr * ss + fi * cc;
-    end;
-    test.coReal1[i] := test.coReal1[i] / n;
-    test.coImag1[i] := test.coImag1[i] / n;
-    test.coReal2[i] := test.coReal2[i] / n;
-    test.coImag2[i] := test.coImag2[i] / n;
-  end;
-  X[0] := bnd.X[0];
-  Y[0] := bnd.Y[0];
-  for i := 0 to bnd.Count - 1 do
-  begin
-    wr[i] := 0;
-    wi[i] := 0;
-    for j := 0 to recg.numDescriptor - 1 do
-    begin
-      cc := cos(2 * pi * i * j / n);
-      ss := sin(2 * pi * i * j / n);
-      wr[i] := wr[i] + test.coReal1[j] * cc - test.coImag1[j] * ss +
-        test.coReal2[j] * cc + test.coImag2[j] * ss;
-      wi[i] := wi[i] + test.coReal1[j] * ss + test.coImag1[j] * cc -
-        test.coReal2[j] * ss + test.coImag2[j] * cc;
-    end;
-  end;
   Image3.Canvas.BeginScene;
   Image3.Canvas.FillRect(Image3.BoundsRect, 0, 0, [], 1);
   Image3.Canvas.DrawRect(Image3.BoundsRect, 0, 0, [], 1);
-  for i := 1 to bnd.Count - 1 do
-  begin
-    X[i] := X[i - 1] + wr[i - 1];
-    Y[i] := Y[i - 1] + wi[i - 1];
-    Image3.Canvas.DrawLine(PointF(X[i - 1], Y[i - 1]), PointF(X[i], Y[i]), 1);
-  end;
+  with recg.bnd do
+    for i := 0 to Count - 1 do
+      Image3.Canvas.DrawLine(PointF(X[i - 1], Y[i - 1]), PointF(X[i], Y[i]), 1);
   Image3.Canvas.EndScene;
   cnt := 0;
   for i := 0 to recg.numDescriptor - 1 do
-  begin
-    a[cnt] := test.coReal1[i];
-    a[recg.numDescriptor + cnt] := test.coImag1[i];
-    a[2 * recg.numDescriptor + cnt] := test.coReal2[i];
-    a[3 * recg.numDescriptor + cnt] := test.coImag2[i];
-    inc(cnt);
-  end;
+    with recg.model[recg.rIndex] do
+    begin
+      a[cnt] := coReal1[i];
+      a[recg.numDescriptor + cnt] := coImag1[i];
+      a[2 * recg.numDescriptor + cnt] := coReal2[i];
+      a[3 * recg.numDescriptor + cnt] := coImag2[i];
+      inc(cnt);
+    end;
   for n := 0 to Fourier.numEntry - 1 do
   begin
     cnt := 0;
@@ -261,7 +215,6 @@ begin
       estima[n] := recg.Correlation(a, b, 4 * recg.numDescriptor);
   end;
   ListBox1.Items.Clear;
-  i := 0;
   for i := 0 to recg.numEntry - 1 do
   begin
     j := ListBox1.Items.Add('(' + Fourier.model[i].name + ')' +

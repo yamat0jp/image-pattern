@@ -8,7 +8,7 @@ uses
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.Ani, FMX.Layouts,
   FMX.Gestures,
   FMX.StdCtrls, FMX.Media, FMX.Objects, FMX.TabControl, FMX.Graphics, Unit2,
-  FMX.TextLayout;
+  FMX.TextLayout, FMX.ListBox;
 
 type
   TForm1 = class(TForm)
@@ -32,6 +32,10 @@ type
     SpeedButton1: TSpeedButton;
     OpenDialog1: TOpenDialog;
     Button3: TButton;
+    Panel3: TPanel;
+    Button4: TButton;
+    ListBox1: TListBox;
+    ProgressBar1: TProgressBar;
     procedure ToolbarCloseButtonClick(Sender: TObject);
     procedure FormGesture(Sender: TObject; const EventInfo: TGestureEventInfo;
       var Handled: Boolean);
@@ -46,10 +50,14 @@ type
     procedure Button3Click(Sender: TObject);
     procedure Image1Paint(Sender: TObject; Canvas: TCanvas;
       const ARect: TRectF);
+    procedure Button2Click(Sender: TObject);
+    procedure Button4Click(Sender: TObject);
+    procedure Image2MouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Single);
   private
     FGestureOrigin: TPointF;
     FGestureInProgress: Boolean;
-    obj: TFourier;
+    obj, recg: TFourier;
     buf1, buf2: TBitmap;
     { private êÈåæ }
     procedure ShowToolbar(AShow: Boolean);
@@ -98,6 +106,14 @@ begin
   end;
 end;
 
+procedure TForm1.Image2MouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Single);
+begin
+  recg.select(X,Y);
+  obj.nn.cadidate:=ListBox1.Items;
+  obj.nrecg(recg.model[recg.rIndex],recg.boundary[recg.rIndex]);
+end;
+
 procedure TForm1.ToolbarCloseButtonClick(Sender: TObject);
 begin
   Application.Terminate;
@@ -114,6 +130,15 @@ begin
   obj.sortingPos;
 end;
 
+procedure TForm1.Button2Click(Sender: TObject);
+var
+  s: Single;
+begin
+  obj.preProcess;
+  obj.numbers;
+  obj.nn.learnBP3(5000);
+end;
+
 procedure TForm1.Button3Click(Sender: TObject);
 begin
   if OpenDialog1.Execute = true then
@@ -121,6 +146,12 @@ begin
     buf1.LoadFromFile(OpenDialog1.FileName);
     Image1.Bitmap.Assign(buf1);
   end;
+end;
+
+procedure TForm1.Button4Click(Sender: TObject);
+begin
+  recg.BinaryGray(Image2.Bitmap,77,true);
+  recg.DetectArea(Image2.Bitmap);
 end;
 
 procedure TForm1.CameraComponent1SampleBufferReady(Sender: TObject;
@@ -138,6 +169,7 @@ end;
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   obj := TFourier.Create;
+  recg := TFourier.Create;
   buf1 := TBitmap.Create;
   buf2 := TBitmap.Create;
   buf1.Assign(Image1.Bitmap);
@@ -146,6 +178,7 @@ end;
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   obj.Free;
+  recg.Free;
   buf1.Free;
   buf2.Free;
 end;

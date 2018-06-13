@@ -131,8 +131,6 @@ begin
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
-var
-  s: Single;
 begin
   obj.preProcess;
   obj.numbers;

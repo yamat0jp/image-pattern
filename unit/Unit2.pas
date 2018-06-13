@@ -83,13 +83,11 @@ type
     farr: TBinary;
     function Getmodel(X: integer): TModel;
     function Getboundary(X: integer): TBoundary;
-    function GetnumDescriptor: integer;
-    procedure SetnumDescriptor(const Value: integer);
     procedure Clear;
     function labelborder8(nx, ny, X, Y, code, cnt: integer;
       id: TBinary): Boolean;
     procedure SetnumEntry(const Value: integer);
-    procedure calfourierC(model: TModel; boundary: TBoundary);
+    procedure calfourierC(model: TModel; boundary: TBoundary; cnt: integer);
   public
     color: TAlphaColor;
     ar: array [0 .. TMAX_PARAM.MAX_RECT - 1] of TRect;
@@ -98,13 +96,12 @@ type
     bnd: TBoundary;
     nn: TNueralNet;
     rIndex: integer;
+    numDescriptor: integer;
     constructor Create;
     destructor Destroy; override;
     property model[X: integer]: TModel read Getmodel;
     property boundary[X: integer]: TBoundary read Getboundary;
     property numEntry: integer read FnumEntry write SetnumEntry;
-    property numDescriptor: integer read GetnumDescriptor
-      write SetnumDescriptor;
     procedure BinaryGray(bmp: TBitmap; th: integer; flagBinaryDisp: Boolean);
     procedure DetectArea(bmp: TBitmap);
     procedure sortingPos;
@@ -178,7 +175,7 @@ constructor TFourier.Create;
 begin
   inherited;
   SetnumEntry(1);
-  SetnumDescriptor(20);
+  numDescriptor:=10;
   bnd := TBoundary.Create;
   nn := TNueralNet.Create;
   minWidth := 2;
@@ -406,7 +403,7 @@ end;
 
 procedure TFourier.nrecg(item: TModel; bnd: TBoundary);
 begin
-  calfourierC(item, bnd);
+  calfourierC(item, bnd, numDescriptor);
   nn.recognition(item);
 end;
 
@@ -432,7 +429,7 @@ var
   i: integer;
 begin
   for i := 0 to numEntry - 1 do
-    calfourierC(model[i], boundary[i]);
+    calfourierC(model[i], boundary[i], numDescriptor);
 end;
 
 procedure TFourier.recognition;
@@ -445,7 +442,7 @@ var
 begin
   s := boundary[rIndex];
   test := model[rIndex];
-  calfourierC(test, s);
+  calfourierC(test, s, numDescriptor);
   bnd.Count := s.Count;
   bnd.X[0] := s.X[0];
   bnd.Y[0] := s.Y[0];
@@ -557,13 +554,15 @@ begin
   end;
 end;
 
-procedure TFourier.calfourierC(model: TModel; boundary: TBoundary);
+procedure TFourier.calfourierC(model: TModel; boundary: TBoundary;
+  cnt: integer);
 var
   i, j, n: integer;
   fr, fi, ss, cc: Single;
 begin
+  model.numDescriptor := cnt;
   n := boundary.Count;
-  for i := 0 to numDescriptor - 1 do
+  for i := 0 to cnt - 1 do
   begin
     model.coReal1[i] := 0;
     model.coImag1[i] := 0;
@@ -615,19 +614,6 @@ end;
 function TFourier.Getmodel(X: integer): TModel;
 begin
   result := FModels[X];
-end;
-
-function TFourier.GetnumDescriptor: integer;
-begin
-  result := FModels[0].numDescriptor;
-end;
-
-procedure TFourier.SetnumDescriptor(const Value: integer);
-var
-  i: integer;
-begin
-  for i := 0 to FnumEntry - 1 do
-    FModels[i].numDescriptor := Value;
 end;
 
 procedure TFourier.SetnumEntry(const Value: integer);
@@ -830,30 +816,30 @@ begin
   begin
     cadidate.Clear;
     for i := 1 to 3 do
-      cadidate.AddObject('',nil);
+      cadidate.AddObject('', nil);
     max := -1;
     for i := 0 to numOutput - 1 do
       if max < zu[i] then
       begin
         max := zu[i];
-        cadidate[0]:=data[i].name;
+        cadidate[0] := data[i].name;
         cadidate.Objects[0] := Pointer(i);
       end;
     max := -1;
     for i := 0 to numOutput - 1 do
-      if (max < zu[i]) and (i <> Integer(cadidate.Objects[0])) then
+      if (max < zu[i]) and (i <> integer(cadidate.Objects[0])) then
       begin
         max := zu[i];
-        cadidate[1]:=data[i].name;
+        cadidate[1] := data[i].name;
         cadidate.Objects[1] := Pointer(i);
       end;
     max := -1;
     for i := 0 to numOutput - 1 do
-      if (max < zu[i]) and (i <> Integer(cadidate.Objects[0])) and
-        (i <> Integer(cadidate.Objects[1])) then
+      if (max < zu[i]) and (i <> integer(cadidate.Objects[0])) and
+        (i <> integer(cadidate.Objects[1])) then
       begin
         max := zu[i];
-        cadidate[2]:=data[i].name;
+        cadidate[2] := data[i].name;
       end;
   end;
 end;

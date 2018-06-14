@@ -73,7 +73,7 @@ type
     procedure recognition(test: TModel);
   end;
 
-  TFourier = class
+  TFourier = class(TComponent)
   type
     TBinary = array of array of integer;
   protected
@@ -97,7 +97,7 @@ type
     nn: TNueralNet;
     rIndex: integer;
     numDescriptor: integer;
-    constructor Create;
+    constructor Create(AOWner: TComponent); override;
     destructor Destroy; override;
     property model[X: integer]: TModel read Getmodel;
     property boundary[X: integer]: TBoundary read Getboundary;
@@ -171,7 +171,7 @@ begin
   result := result / (Norm(A) * Norm(B) + 0.01);
 end;
 
-constructor TFourier.Create;
+constructor TFourier.Create(AOWner: TComponent);
 begin
   inherited;
   SetnumEntry(1);

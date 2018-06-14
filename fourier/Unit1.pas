@@ -75,6 +75,8 @@ type
       const ATime: Int64);
     procedure Button3Click(Sender: TObject);
     procedure Button5Click(Sender: TObject);
+    procedure Button6Click(Sender: TObject);
+    procedure Button7Click(Sender: TObject);
   private
     FGestureOrigin: TPointF;
     FGestureInProgress: Boolean;
@@ -110,11 +112,16 @@ end;
 procedure TForm1.Image1MouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Single);
 begin
-  recg.select(X,Y);
   if Sender = Image1 then
+  begin
+    Fourier.select(X, Y);
     Edit4.SetFocus
+  end
   else
+  begin
+    recg.select(X, Y);
     recognition;
+  end;
 end;
 
 procedure TForm1.recognition;
@@ -238,6 +245,32 @@ begin
     ListBox2.Items.Add(Fourier.model[i].name + ' / ' + i.ToString);
 end;
 
+procedure TForm1.Button6Click(Sender: TObject);
+var
+  f: TFileStream;
+begin
+  f := TFileStream.Create('default.fo', fmCreate or fmOpenWrite);
+  try
+    f.WriteComponent(Fourier);
+  finally
+    f.Free;
+  end;
+end;
+
+procedure TForm1.Button7Click(Sender: TObject);
+var
+  f: TFileStream;
+begin
+  if FIleExists('default.fo') = false then
+    Exit;
+  f := TFileStream.Create('default.fo', fmOpenRead);
+  try
+    f.ReadComponent(Fourier);
+  finally
+    f.Free;
+  end;
+end;
+
 procedure TForm1.CameraComponent1SampleBufferReady(Sender: TObject;
   const ATime: Int64);
 begin
@@ -295,9 +328,9 @@ begin
   buf := TBitmap.Create;
   back := TBitmap.Create;
   cap := not Image1.Bitmap.IsEmpty;
-  Fourier := TFourier.Create;
+  Fourier := TFourier.Create(nil);
   Fourier.color := TAlphaColors.Blue;
-  recg := TFourier.Create;
+  recg := TFourier.Create(nil);
   recg.color := TAlphaColors.Red;
   back.Assign(Image4.Bitmap);
 end;

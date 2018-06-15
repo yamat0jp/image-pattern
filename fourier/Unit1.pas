@@ -246,29 +246,14 @@ begin
 end;
 
 procedure TForm1.Button6Click(Sender: TObject);
-var
-  f: TFileStream;
 begin
-  f := TFileStream.Create('default.fo', fmCreate or fmOpenWrite);
-  try
-    f.WriteComponent(Fourier);
-  finally
-    f.Free;
-  end;
+  Fourier.saveModels('default.fo');
 end;
 
 procedure TForm1.Button7Click(Sender: TObject);
-var
-  f: TFileStream;
 begin
-  if FIleExists('default.fo') = false then
-    Exit;
-  f := TFileStream.Create('default.fo', fmOpenRead);
-  try
-    f.ReadComponent(Fourier);
-  finally
-    f.Free;
-  end;
+  Fourier.loadModels('default.fo');
+  Button5Click(Sender);
 end;
 
 procedure TForm1.CameraComponent1SampleBufferReady(Sender: TObject;
@@ -289,6 +274,7 @@ begin
   cap := false;
   buf.Assign(bmp);
   thBinary := Edit3.Text.ToInteger;
+  Fourier.clearModels;
   Fourier.minWidth := Edit1.Text.ToInteger;
   Fourier.minHeight := Edit2.Text.ToInteger;
   Fourier.BinaryGray(bmp, thBinary, true);
@@ -328,9 +314,9 @@ begin
   buf := TBitmap.Create;
   back := TBitmap.Create;
   cap := not Image1.Bitmap.IsEmpty;
-  Fourier := TFourier.Create(nil);
+  Fourier := TFourier.Create;
   Fourier.color := TAlphaColors.Blue;
-  recg := TFourier.Create(nil);
+  recg := TFourier.Create;
   recg.color := TAlphaColors.Red;
   back.Assign(Image4.Bitmap);
 end;

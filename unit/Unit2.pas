@@ -41,6 +41,7 @@ type
   public
     numDescriptor: integer;
     name: string;
+    procedure Clear;
     property coReal1[X: integer]: Single index 0 read GetcoParam
       write SetcoParam;
     property coReal2[X: integer]: Single index 1 read GetcoParam
@@ -73,22 +74,20 @@ type
     procedure recognition(test: TModel);
   end;
 
-  TFourier = class(TComponent)
+  TFourier = class
   type
     TBinary = array of array of integer;
   protected
-    FModels: array [0 .. TMAX_PARAM.MAX_ENTRY] of TModel;
     FBoundary: array [0 .. TMAX_PARAM.MAX_ENTRY] of TBoundary;
-    FnumEntry: integer;
     farr: TBinary;
+    FModels: array [0 .. TMAX_PARAM.MAX_ENTRY] of TModel;
     function Getmodel(X: integer): TModel;
     function Getboundary(X: integer): TBoundary;
-    procedure Clear;
     function labelborder8(nx, ny, X, Y, code, cnt: integer;
       id: TBinary): Boolean;
-    procedure SetnumEntry(const Value: integer);
     procedure calfourierC(model: TModel; boundary: TBoundary; cnt: integer);
   public
+    numEntry: integer;
     color: TAlphaColor;
     ar: array [0 .. TMAX_PARAM.MAX_RECT - 1] of TRect;
     minWidth, minHeight: integer;
@@ -97,11 +96,10 @@ type
     nn: TNueralNet;
     rIndex: integer;
     numDescriptor: integer;
-    constructor Create(AOWner: TComponent); override;
+    constructor Create;
     destructor Destroy; override;
     property model[X: integer]: TModel read Getmodel;
     property boundary[X: integer]: TBoundary read Getboundary;
-    property numEntry: integer read FnumEntry write SetnumEntry;
     procedure BinaryGray(bmp: TBitmap; th: integer; flagBinaryDisp: Boolean);
     procedure DetectArea(bmp: TBitmap);
     procedure sortingPos;
@@ -115,6 +113,9 @@ type
     procedure numbers;
     procedure letters;
     procedure nrecg(item: TModel; bnd: TBoundary);
+    procedure saveModels(filename: string);
+    procedure loadModels(filanema: string);
+    procedure clearModels;
   end;
 
 implementation
@@ -171,16 +172,23 @@ begin
   result := result / (Norm(A) * Norm(B) + 0.01);
 end;
 
-constructor TFourier.Create(AOWner: TComponent);
+constructor TFourier.Create;
+var
+  i: integer;
 begin
   inherited;
-  SetnumEntry(1);
-  numDescriptor:=10;
+  numEntry := 0;
+  numDescriptor := 10;
   bnd := TBoundary.Create;
   nn := TNueralNet.Create;
   minWidth := 2;
   minHeight := 5;
   color := TAlphaColors.Red;
+  for i := 0 to TMAX_PARAM.MAX_ENTRY - 1 do
+  begin
+    FModels[i] := TModel.Create;
+    FBoundary[i] := TBoundary.Create;
+  end;
 end;
 
 procedure TFourier.DetectArea(bmp: TBitmap);
@@ -210,6 +218,7 @@ begin
   i := 10;
   j := 10;
   numRect := 0;
+  numEntry := 0;
   while j < ny - 10 do
   begin
     if (farr[i, j] = 1) and (id[i, j] = 0) then
@@ -234,15 +243,15 @@ begin
         ar[numRect].Height := 3;
         code := 7;
         if labelborder8(nx, ny, i, j, code, numRect, id) = true then
-          inc(numRect)
-        else
-          SetnumEntry(numEntry - 1);
+        begin
+          inc(numRect);
+          inc(numEntry);
+        end;
       end
       else if farr[i + 1, j] = 0 then
       begin
         code := 3;
         labelborder8(nx, ny, i, j, code, numRect, id);
-        SetnumEntry(numEntry - 1);
       end;
     end;
     increment;
@@ -272,7 +281,6 @@ begin
   i2 := 0;
   j2 := 0;
   ii := 0;
-  SetnumEntry(cnt + 1);
   boundary[cnt].Count := 0;
   while (i2 <> X) or (j2 <> Y) do
   begin
@@ -401,6 +409,26 @@ begin
   nn.numOutput := 26;
 end;
 
+procedure TFourier.loadModels(filanema: string);
+var
+  f: TFileStream;
+  s: Byte;
+  i: integer;
+begin
+  if FileExists('default.fo') = false then
+    Exit;
+  clearModels;
+  f := TFileStream.Create('default.fo', fmOpenRead);
+  try
+    f.ReadBuffer(s, SizeOf(Byte));
+    numEntry := s;
+    for i := 0 to s - 1 do
+      f.Read(FModels[i], TModel.InstanceSize);
+  finally
+    f.Free;
+  end;
+end;
+
 procedure TFourier.nrecg(item: TModel; bnd: TBoundary);
 begin
   calfourierC(item, bnd, numDescriptor);
@@ -465,6 +493,23 @@ begin
   begin
     bnd.X[i] := bnd.X[i - 1] + wr[i - 1];
     bnd.Y[i] := bnd.Y[i - 1] + wi[i - 1];
+  end;
+end;
+
+procedure TFourier.saveModels(filename: string);
+var
+  f: TFileStream;
+  s: Byte;
+  i: integer;
+begin
+  f := TFileStream.Create(filename, fmOpenWrite or fmCreate);
+  try
+    s := numEntry;
+    f.WriteBuffer(s, SizeOf(Byte));
+    for i := 0 to s - 1 do
+      f.Write(FModels[i], TModel.InstanceSize);
+  finally
+    f.Free;
   end;
 end;
 
@@ -586,21 +631,25 @@ begin
   end;
 end;
 
-procedure TFourier.Clear;
+procedure TFourier.clearModels;
 var
   i: integer;
 begin
-  for i := 0 to FnumEntry - 1 do
+  for i := 0 to TMAX_PARAM.MAX_ENTRY - 1 do
+    model[i].Clear;
+  numEntry := 0;
+end;
+
+destructor TFourier.Destroy;
+var
+  i: integer;
+begin
+  for i := 0 to TMAX_PARAM.MAX_ENTRY - 1 do
   begin
     FModels[i].Free;
     FBoundary[i].Free;
   end;
   Finalize(farr);
-end;
-
-destructor TFourier.Destroy;
-begin
-  Clear;
   bnd.Free;
   nn.Free;
   inherited;
@@ -616,26 +665,22 @@ begin
   result := FModels[X];
 end;
 
-procedure TFourier.SetnumEntry(const Value: integer);
+{ TModel }
+
+procedure TModel.Clear;
 var
   i: integer;
 begin
-  if Value > FnumEntry then
-    for i := FnumEntry to Value - 1 do
-    begin
-      FModels[i] := TModel.Create;
-      FBoundary[i] := TBoundary.Create;
-    end
-  else if Value < FnumEntry then
-    for i := Value to FnumEntry - 1 do
-    begin
-      FModels[i].Free;
-      FBoundary[i].Free;
-    end;
-  FnumEntry := Value;
+  for i := 0 to TMAX_PARAM.MAX_REPRESENTATIVE - 1 do
+  begin
+    FReal1[i] := 0;
+    FImag1[i] := 0;
+    FReal2[i] := 0;
+    FImag2[i] := 0;
+  end;
+  name := '';
+  numDescriptor := 0;
 end;
-
-{ TModel }
 
 function TModel.GetcoParam(X: integer; const Index: integer): Single;
 begin

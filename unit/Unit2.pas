@@ -40,7 +40,7 @@ type
     procedure SetcoParam(X: integer; const Index: integer; const Value: Single);
   public
     numDescriptor: integer;
-    name: string;
+    name: string[20];
     procedure Clear;
     property coReal1[X: integer]: Single index 0 read GetcoParam
       write SetcoParam;

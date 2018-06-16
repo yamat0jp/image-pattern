@@ -3134,6 +3134,11 @@ object Form1: TForm1
           Text = #12487#12540#12479
           OnClick = Button5Click
         end
+        object Label2: TLabel
+          Position.X = 40.000000000000000000
+          Position.Y = 304.000000000000000000
+          Text = #23398#32722#26178#38291' ?s'
+        end
       end
     end
   end
@@ -3152,6 +3157,16 @@ object Form1: TForm1
       Size.PlatformDefault = False
       Text = #12459#12513#12521
       OnClick = SpeedButton1Click
+    end
+    object Label1: TLabel
+      AutoSize = True
+      Position.X = 80.000000000000000000
+      Position.Y = 112.000000000000000000
+      Size.Width = 60.000000000000000000
+      Size.Height = 16.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.WordWrap = False
+      Text = 'data name'
     end
   end
   object CameraComponent1: TCameraComponent

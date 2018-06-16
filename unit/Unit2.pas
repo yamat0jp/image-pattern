@@ -750,7 +750,6 @@ begin
       XX[4 * j + 1, i] := data[i].coImag1[j];
       XX[4 * j + 2, i] := data[i].coReal2[j];
       XX[4 * j + 3, i] := data[i].coImag2[j];
-      teachLabels[i] := data[i].name;
     end;
 end;
 
@@ -779,7 +778,7 @@ begin
   convert;
   for i := 0 to numEntry - 1 do
     for j := 0 to numOutput - 1 do
-      if teachLabels[i] = data[i].name then
+      if teachLabels[j] = data[i].name then
         teacher[j, i] := 1.0
       else
         teacher[j, i] := 0;

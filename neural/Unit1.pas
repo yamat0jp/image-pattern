@@ -37,6 +37,8 @@ type
     ListBox1: TListBox;
     ProgressBar1: TProgressBar;
     Button5: TButton;
+    Label1: TLabel;
+    Label2: TLabel;
     procedure ToolbarCloseButtonClick(Sender: TObject);
     procedure FormGesture(Sender: TObject; const EventInfo: TGestureEventInfo;
       var Handled: Boolean);
@@ -132,10 +134,14 @@ begin
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
+var
+  Time: TTime;
 begin
+  Time:=Now;
   obj.numbers;
   obj.preProcess;
   obj.nn.learnBP3(50000);
+  Label2.Text:=(Now-Time).ToString;
 end;
 
 procedure TForm1.Button3Click(Sender: TObject);
@@ -157,7 +163,10 @@ end;
 procedure TForm1.Button5Click(Sender: TObject);
 begin
   if OpenDialog1.Execute = true then
+  begin
     obj.loadModels(OpenDialog1.FileName);
+    Label1.Text:=OpenDialog1.FileName;
+  end;
 end;
 
 procedure TForm1.CameraComponent1SampleBufferReady(Sender: TObject;

@@ -40,7 +40,7 @@ type
     procedure SetcoParam(X: integer; const Index: integer; const Value: Single);
   public
     numDescriptor: integer;
-    name: string[20];
+    name: string;
     procedure Clear;
     property coReal1[X: integer]: Single index 0 read GetcoParam
       write SetcoParam;
@@ -55,12 +55,12 @@ type
   TNueralNet = class
   protected
     numInput, numOutput: integer;
-    XX: array [0 .. TMAX_PARAM.MAX_INPUT, 0 .. TMAX_PARAM.MAX_ENTRY] of Single;
-    u, v: array [0 .. TMAX_PARAM.MAX_INPUT, 0 .. TMAX_PARAM.MAX_OUTPUT]
+    XX: array [0 .. TMAX_PARAM.MAX_INPUT-1, 0 .. TMAX_PARAM.MAX_ENTRY-1] of Single;
+    u, v: array [0 .. TMAX_PARAM.MAX_INPUT-1, 0 .. TMAX_PARAM.MAX_OUTPUT-1]
       of Single;
-    xu: array [0 .. 2 * TMAX_PARAM.MAX_REPRESENTATIVE] of Single;
-    zu: array [0 .. TMAX_PARAM.MAX_KIND] of Single;
-    teachLabels: array [0 .. TMAX_PARAM.MAX_OUTPUT] of string;
+    xu: array [0 .. 2 * TMAX_PARAM.MAX_REPRESENTATIVE-1] of Single;
+    zu: array [0 .. TMAX_PARAM.MAX_KIND-1] of Single;
+    teachLabels: array [0 .. TMAX_PARAM.MAX_OUTPUT-1] of string;
     data: array of TModel;
     numEntry: integer;
     procedure recogNN;
@@ -78,9 +78,9 @@ type
   type
     TBinary = array of array of integer;
   protected
-    FBoundary: array [0 .. TMAX_PARAM.MAX_ENTRY] of TBoundary;
+    FBoundary: array [0 .. TMAX_PARAM.MAX_ENTRY-1] of TBoundary;
     farr: TBinary;
-    FModels: array [0 .. TMAX_PARAM.MAX_ENTRY] of TModel;
+    FModels: array [0 .. TMAX_PARAM.MAX_ENTRY-1] of TModel;
     function Getmodel(X: integer): TModel;
     function Getboundary(X: integer): TBoundary;
     function labelborder8(nx, ny, X, Y, code, cnt: integer;
@@ -114,7 +114,7 @@ type
     procedure letters;
     procedure nrecg(item: TModel; bnd: TBoundary);
     procedure saveModels(filename: string);
-    procedure loadModels(filanema: string);
+    procedure loadModels(filename: string);
     procedure clearModels;
   end;
 
@@ -218,7 +218,6 @@ begin
   i := 10;
   j := 10;
   numRect := 0;
-  numEntry := 0;
   while j < ny - 10 do
   begin
     if (farr[i, j] = 1) and (id[i, j] = 0) then
@@ -243,10 +242,7 @@ begin
         ar[numRect].Height := 3;
         code := 7;
         if labelborder8(nx, ny, i, j, code, numRect, id) = true then
-        begin
           inc(numRect);
-          inc(numEntry);
-        end;
       end
       else if farr[i + 1, j] = 0 then
       begin
@@ -267,6 +263,7 @@ begin
     EndScene;
   end;
   Finalize(id);
+  numEntry := numRect;
 end;
 
 function TFourier.labelborder8(nx, ny, X, Y, code, cnt: integer;
@@ -409,21 +406,27 @@ begin
   nn.numOutput := 26;
 end;
 
-procedure TFourier.loadModels(filanema: string);
+procedure TFourier.loadModels(filename: string);
 var
   f: TFileStream;
-  s: Byte;
-  i: integer;
+  i, j: integer;
 begin
-  if FileExists('default.fo') = false then
+  if FileExists(filename) = false then
     Exit;
   clearModels;
-  f := TFileStream.Create('default.fo', fmOpenRead);
+  f := TFileStream.Create(filename, fmOpenRead);
   try
-    f.ReadBuffer(s, SizeOf(Byte));
-    numEntry := s;
-    for i := 0 to s - 1 do
-      f.Read(FModels[i], TModel.InstanceSize);
+    f.ReadBuffer(numEntry, SizeOf(integer));
+    for i := 0 to numEntry - 1 do
+    begin
+      f.ReadBuffer(j, SizeOf(integer));
+      f.Read((@FModels[i].name)^, j * SizeOf(WideChar));
+      f.ReadBuffer(numDescriptor, SizeOf(integer));
+      f.Read(FModels[i].FReal1, SizeOf(FModels[i].FReal1));
+      f.Read(FModels[i].FImag1, SizeOf(FModels[i].FImag1));
+      f.Read(FModels[i].FReal2, SizeOf(FModels[i].FReal2));
+      f.Read(FModels[i].FImag2, SizeOf(FModels[i].FImag2));
+    end;
   finally
     f.Free;
   end;
@@ -456,7 +459,7 @@ procedure TFourier.preProcess;
 var
   i: integer;
 begin
-  for i := 0 to numEntry - 1 do
+  for i := 0 to numRect - 1 do
     calfourierC(model[i], boundary[i], numDescriptor);
 end;
 
@@ -499,15 +502,24 @@ end;
 procedure TFourier.saveModels(filename: string);
 var
   f: TFileStream;
-  s: Byte;
-  i: integer;
+  i, j: integer;
+  s: string;
 begin
   f := TFileStream.Create(filename, fmOpenWrite or fmCreate);
   try
-    s := numEntry;
-    f.WriteBuffer(s, SizeOf(Byte));
-    for i := 0 to s - 1 do
-      f.Write(FModels[i], TModel.InstanceSize);
+    f.WriteBuffer(numEntry, SizeOf(integer));
+    for i := 0 to numEntry - 1 do
+    begin
+      j := Length(FModels[i].name);
+      f.WriteBuffer(j, SizeOf(integer));
+      s:=FModels[i].name;
+      f.Write(@s, j * SizeOf(WideChar));
+      f.Write(numDescriptor, SizeOf(integer));
+      f.Write(FModels[i].FReal1, SizeOf(FModels[i].FReal1));
+      f.Write(FModels[i].FImag1, SizeOf(FModels[i].FImag1));
+      f.Write(FModels[i].FReal2, SizeOf(FModels[i].FReal2));
+      f.Write(FModels[i].FImag2, SizeOf(FModels[i].FImag2));
+    end;
   finally
     f.Free;
   end;
@@ -636,7 +648,7 @@ var
   i: integer;
 begin
   for i := 0 to TMAX_PARAM.MAX_ENTRY - 1 do
-    model[i].Clear;
+    FModels[i].Clear;
   numEntry := 0;
 end;
 
@@ -662,7 +674,10 @@ end;
 
 function TFourier.Getmodel(X: integer): TModel;
 begin
-  result := FModels[X];
+  if (X >= 0) and (X < numEntry) then
+    result := FModels[X]
+  else
+    result := nil;
 end;
 
 { TModel }

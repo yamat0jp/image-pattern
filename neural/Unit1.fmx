@@ -3119,13 +3119,20 @@ object Form1: TForm1
           Position.X = 72.000000000000000000
           Position.Y = 146.000000000000000000
           TabOrder = 3
-          Text = #38283#12367
+          Text = #30011#20687
           OnClick = Button3Click
         end
         object ProgressBar1: TProgressBar
           Orientation = Horizontal
           Position.X = 56.000000000000000000
           Position.Y = 248.000000000000000000
+        end
+        object Button5: TButton
+          Position.X = 72.000000000000000000
+          Position.Y = 192.000000000000000000
+          TabOrder = 5
+          Text = #12487#12540#12479
+          OnClick = Button5Click
         end
       end
     end

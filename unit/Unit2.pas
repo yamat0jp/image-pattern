@@ -40,7 +40,7 @@ type
     procedure SetcoParam(X: integer; const Index: integer; const Value: Single);
   public
     numDescriptor: integer;
-    name: string;
+    name: string[20];
     procedure Clear;
     property coReal1[X: integer]: Single index 0 read GetcoParam
       write SetcoParam;
@@ -409,19 +409,20 @@ end;
 procedure TFourier.loadModels(filename: string);
 var
   f: TFileStream;
-  i, j: integer;
+  i: integer;
+  u: Byte;
 begin
   if FileExists(filename) = false then
     Exit;
   clearModels;
   f := TFileStream.Create(filename, fmOpenRead);
   try
-    f.ReadBuffer(numEntry, SizeOf(integer));
+    f.ReadBuffer(numEntry, 1);
     for i := 0 to numEntry - 1 do
     begin
-      f.ReadBuffer(j, SizeOf(integer));
-      f.Read((@FModels[i].name)^, j * SizeOf(WideChar));
-      f.ReadBuffer(numDescriptor, SizeOf(integer));
+      f.ReadBuffer(u, 1);
+      f.Read((@FModels[i].name)^, u * SizeOf(WideChar));
+      f.ReadBuffer(numDescriptor, 1);
       f.Read(FModels[i].FReal1, SizeOf(FModels[i].FReal1));
       f.Read(FModels[i].FImag1, SizeOf(FModels[i].FImag1));
       f.Read(FModels[i].FReal2, SizeOf(FModels[i].FReal2));
@@ -502,19 +503,18 @@ end;
 procedure TFourier.saveModels(filename: string);
 var
   f: TFileStream;
-  i, j: integer;
-  s: string;
+  i: integer;
+  u: Byte;
 begin
   f := TFileStream.Create(filename, fmOpenWrite or fmCreate);
   try
-    f.WriteBuffer(numEntry, SizeOf(integer));
+    f.WriteBuffer(numEntry, 1);
     for i := 0 to numEntry - 1 do
     begin
-      j := Length(FModels[i].name);
-      f.WriteBuffer(j, SizeOf(integer));
-      s:=FModels[i].name;
-      f.Write(@s, j * SizeOf(WideChar));
-      f.Write(numDescriptor, SizeOf(integer));
+      u := Length(FModels[i].name);
+      f.WriteBuffer(u, 1);
+      f.Write((@FModels[i].name)^, u * SizeOf(WideChar));
+      f.Write(numDescriptor, 1);
       f.Write(FModels[i].FReal1, SizeOf(FModels[i].FReal1));
       f.Write(FModels[i].FImag1, SizeOf(FModels[i].FImag1));
       f.Write(FModels[i].FReal2, SizeOf(FModels[i].FReal2));

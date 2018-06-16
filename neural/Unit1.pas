@@ -36,6 +36,7 @@ type
     Button4: TButton;
     ListBox1: TListBox;
     ProgressBar1: TProgressBar;
+    Button5: TButton;
     procedure ToolbarCloseButtonClick(Sender: TObject);
     procedure FormGesture(Sender: TObject; const EventInfo: TGestureEventInfo;
       var Handled: Boolean);
@@ -54,6 +55,7 @@ type
     procedure Button4Click(Sender: TObject);
     procedure Image2MouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Single);
+    procedure Button5Click(Sender: TObject);
   private
     FGestureOrigin: TPointF;
     FGestureInProgress: Boolean;
@@ -150,6 +152,12 @@ procedure TForm1.Button4Click(Sender: TObject);
 begin
   recg.BinaryGray(Image2.Bitmap,77,true);
   recg.DetectArea(Image2.Bitmap);
+end;
+
+procedure TForm1.Button5Click(Sender: TObject);
+begin
+  if OpenDialog1.Execute = true then
+    obj.loadModels(OpenDialog1.FileName);
 end;
 
 procedure TForm1.CameraComponent1SampleBufferReady(Sender: TObject;

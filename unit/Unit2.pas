@@ -55,12 +55,13 @@ type
   TNueralNet = class
   protected
     numInput, numOutput: integer;
-    XX: array [0 .. TMAX_PARAM.MAX_INPUT-1, 0 .. TMAX_PARAM.MAX_ENTRY-1] of Single;
-    u, v: array [0 .. TMAX_PARAM.MAX_INPUT-1, 0 .. TMAX_PARAM.MAX_OUTPUT-1]
+    XX: array [0 .. TMAX_PARAM.MAX_INPUT - 1, 0 .. TMAX_PARAM.MAX_ENTRY - 1]
       of Single;
-    xu: array [0 .. 2 * TMAX_PARAM.MAX_REPRESENTATIVE-1] of Single;
-    zu: array [0 .. TMAX_PARAM.MAX_KIND-1] of Single;
-    teachLabels: array [0 .. TMAX_PARAM.MAX_OUTPUT-1] of string;
+    u, v: array [0 .. TMAX_PARAM.MAX_INPUT - 1, 0 .. TMAX_PARAM.MAX_OUTPUT - 1]
+      of Single;
+    xu: array [0 .. 2 * TMAX_PARAM.MAX_REPRESENTATIVE - 1] of Single;
+    zu: array [0 .. TMAX_PARAM.MAX_KIND - 1] of Single;
+    teachLabels: array [0 .. TMAX_PARAM.MAX_OUTPUT - 1] of string;
     data: array of TModel;
     numEntry: integer;
     procedure recogNN;
@@ -78,9 +79,9 @@ type
   type
     TBinary = array of array of integer;
   protected
-    FBoundary: array [0 .. TMAX_PARAM.MAX_ENTRY-1] of TBoundary;
+    FBoundary: array [0 .. TMAX_PARAM.MAX_ENTRY - 1] of TBoundary;
     farr: TBinary;
-    FModels: array [0 .. TMAX_PARAM.MAX_ENTRY-1] of TModel;
+    FModels: array [0 .. TMAX_PARAM.MAX_ENTRY - 1] of TModel;
     function Getmodel(X: integer): TModel;
     function Getboundary(X: integer): TBoundary;
     function labelborder8(nx, ny, X, Y, code, cnt: integer;
@@ -427,6 +428,9 @@ begin
       f.Read(FModels[i].FImag1, SizeOf(FModels[i].FImag1));
       f.Read(FModels[i].FReal2, SizeOf(FModels[i].FReal2));
       f.Read(FModels[i].FImag2, SizeOf(FModels[i].FImag2));
+      f.Read(FBoundary[i].X, SizeOf(FBoundary[i].X));
+      f.Read(FBoundary[i].Y, SizeOf(FBoundary[i].Y));
+      f.ReadBuffer(FBoundary[i].Count, SizeOf(LongInt));
     end;
   finally
     f.Free;
@@ -453,6 +457,7 @@ begin
   end;
   nn.data := @FModels;
   nn.numEntry := numRect;
+  numDescriptor := 8;
   nn.numOutput := 10;
 end;
 
@@ -519,6 +524,9 @@ begin
       f.Write(FModels[i].FImag1, SizeOf(FModels[i].FImag1));
       f.Write(FModels[i].FReal2, SizeOf(FModels[i].FReal2));
       f.Write(FModels[i].FImag2, SizeOf(FModels[i].FImag2));
+      f.Write(FBoundary[i].X, SizeOf(FBoundary[i].X));
+      f.Write(FBoundary[i].Y, SizeOf(FBoundary[i].Y));
+      f.WriteBuffer(FBoundary[i].Count, SizeOf(LongInt));
     end;
   finally
     f.Free;
@@ -750,7 +758,7 @@ constructor TNueralNet.Create;
 begin
   inherited;
   eta := 0.3;
-  numHidden := 10;
+  numHidden := 8;
 end;
 
 procedure TNueralNet.learnBP3(numRepeat: integer);

@@ -111,9 +111,8 @@ end;
 procedure TForm1.Image2MouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Single);
 begin
-  recg.select(X,Y);
-  obj.nn.cadidate:=ListBox1.Items;
-  obj.nrecg(recg.model[recg.rIndex],recg.boundary[recg.rIndex]);
+  recg.select(X, Y);
+  obj.nrecg(recg.model[recg.rIndex], recg.boundary[recg.rIndex]);
 end;
 
 procedure TForm1.ToolbarCloseButtonClick(Sender: TObject);
@@ -134,9 +133,9 @@ end;
 
 procedure TForm1.Button2Click(Sender: TObject);
 begin
-  obj.preProcess;
   obj.numbers;
-  obj.nn.learnBP3(5000);
+  obj.preProcess;
+  obj.nn.learnBP3(50000);
 end;
 
 procedure TForm1.Button3Click(Sender: TObject);
@@ -150,8 +149,9 @@ end;
 
 procedure TForm1.Button4Click(Sender: TObject);
 begin
-  recg.BinaryGray(Image2.Bitmap,77,true);
+  recg.BinaryGray(Image2.Bitmap, 77, true);
   recg.DetectArea(Image2.Bitmap);
+  obj.nn.cadidate := ListBox1.Items;
 end;
 
 procedure TForm1.Button5Click(Sender: TObject);

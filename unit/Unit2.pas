@@ -64,15 +64,15 @@ type
     teachLabels: array [0 .. TMAX_PARAM.MAX_OUTPUT - 1] of string;
     data: array of TModel;
     numEntry: integer;
-    procedure recogNN;
-    procedure convert;
+    procedure convert(test: TModel); overload;
+    procedure convert(tests: array of TModel); overload;
   public
     numHidden: integer;
     eta: Single;
     cadidate: TStrings;
     constructor Create;
-    procedure learnBP3(numRepeat: integer);
-    procedure recognition(test: TModel);
+    procedure recogNN(item: TModel);
+    procedure learnBP3(tests: array of TModel; numEntry, numRepeat: integer);
   end;
 
   TFourier = class
@@ -113,10 +113,11 @@ type
     procedure preProcess;
     procedure numbers;
     procedure letters;
-    procedure nrecg(item: TModel; bnd: TBoundary);
+    procedure nrecg;
     procedure saveModels(filename: string);
     procedure loadModels(filename: string);
     procedure clearModels;
+    procedure learn(numRepeat: integer);
   end;
 
 implementation
@@ -396,6 +397,11 @@ begin
   result := not((ar[cnt].Width < minWidth) or (ar[cnt].Height < minHeight));
 end;
 
+procedure TFourier.learn(numRepeat: integer);
+begin
+  nn.learnBP3(FModels,numEntry,numRepeat);
+end;
+
 procedure TFourier.letters;
 var
   i: integer;
@@ -437,10 +443,12 @@ begin
   end;
 end;
 
-procedure TFourier.nrecg(item: TModel; bnd: TBoundary);
+procedure TFourier.nrecg;
+var
+  i: integer;
 begin
-  calfourierC(item, bnd, numDescriptor);
-  nn.recognition(item);
+  for i := 0 to numRect - 1 do
+    calfourierC(model[i], boundary[i], numDescriptor);
 end;
 
 procedure TFourier.numbers;
@@ -465,7 +473,7 @@ procedure TFourier.preProcess;
 var
   i: integer;
 begin
-  for i := 0 to numRect - 1 do
+  for i := 0 to numEntry - 1 do
     calfourierC(model[i], boundary[i], numDescriptor);
 end;
 
@@ -737,19 +745,31 @@ end;
 
 { TNueralNet }
 
-procedure TNueralNet.convert;
+procedure TNueralNet.convert(test: TModel);
+var
+  i: integer;
+begin
+  for i := 0 to test.numDescriptor - 1 do
+  begin
+    xu[1 + 2 * (i - 1)] := test.coReal1[i] * test.coReal1[i] + test.coImag1[i] *
+      test.coImag1[i];
+    xu[2 + 2 * (i - 1)] := test.coReal2[i] * test.coReal2[i] + test.coImag2[i] *
+      test.coImag2[i];
+  end;
+end;
+
+procedure TNueralNet.convert(tests: array of TModel);
 var
   i: integer;
   j: integer;
 begin
-  numInput := 2 * data[0].numDescriptor;
   for i := 0 to numEntry - 1 do
-    for j := 0 to numInput - 1 do
+    for j := 0 to tests[i].numDescriptor - 1 do
     begin
-      XX[4 * j, i] := data[i].coReal1[j];
-      XX[4 * j + 1, i] := data[i].coImag1[j];
-      XX[4 * j + 2, i] := data[i].coReal2[j];
-      XX[4 * j + 3, i] := data[i].coImag2[j];
+      XX[1 + 2 * (j - 1), i] := tests[i].coReal1[j] * tests[i].coReal1[j] +
+        tests[i].coImag1[j] * tests[i].coImag1[i];
+      XX[2 + 2 * (j - 1), i] := tests[i].coReal2[j] * tests[i].coReal2[j] +
+        tests[i].coImag2[j] * tests[i].coImag2[j];
     end;
 end;
 
@@ -760,7 +780,7 @@ begin
   numHidden := 8;
 end;
 
-procedure TNueralNet.learnBP3(numRepeat: integer);
+procedure TNueralNet.learnBP3(tests: array of TModel; numEntry, numRepeat: integer);
 var
   i: integer;
   yy: array [0 .. TMAX_PARAM.MAX_INPUT, 0 .. TMAX_PARAM.MAX_ENTRY] of Single;
@@ -775,7 +795,8 @@ var
   k: integer;
   sumX, sumY, ss: Single;
 begin
-  convert;
+  Self.numEntry:=numEntry;
+  convert(tests);
   for i := 0 to numEntry - 1 do
     for j := 0 to numOutput - 1 do
       if teachLabels[j] = data[i].name then
@@ -843,21 +864,7 @@ begin
   end;
 end;
 
-procedure TNueralNet.recognition(test: TModel);
-var
-  i: integer;
-begin
-  for i := 0 to test.numDescriptor - 1 do
-  begin
-    xu[1 + 2 * (i - 1)] := Abs(test.coReal1[i] * test.coReal1[i] + test.coImag1
-      [i] * test.coImag1[i]);
-    xu[2 + 2 * (i - 1)] := Abs(test.coReal2[i] * test.coReal2[i] + test.coImag1
-      [i] * test.coImag2[i]);
-  end;
-  recogNN;
-end;
-
-procedure TNueralNet.recogNN;
+procedure TNueralNet.recogNN(item: TModel);
 var
   xsum, ysum: Single;
   yu: array [0 .. TMAX_PARAM.MAX_HIDDEN] of Single;
@@ -865,6 +872,7 @@ var
   i: integer;
   j: integer;
 begin
+  convert(item);
   for i := 0 to numHidden - 1 do
   begin
     xsum := u[0, i];

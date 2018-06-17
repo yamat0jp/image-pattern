@@ -114,7 +114,7 @@ procedure TForm1.Image2MouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Single);
 begin
   recg.select(X, Y);
-  obj.nrecg(recg.model[recg.rIndex], recg.boundary[recg.rIndex]);
+  recg.nn.recogNN(recg.model[recg.rIndex]);
 end;
 
 procedure TForm1.ToolbarCloseButtonClick(Sender: TObject);
@@ -140,7 +140,7 @@ begin
   Time:=Now;
   obj.numbers;
   obj.preProcess;
-  obj.nn.learnBP3(50000);
+  obj.learn(50000);
   Label2.Text:=(Now-Time).ToString;
 end;
 
@@ -157,6 +157,7 @@ procedure TForm1.Button4Click(Sender: TObject);
 begin
   recg.BinaryGray(Image2.Bitmap, 77, true);
   recg.DetectArea(Image2.Bitmap);
+  recg.nrecg;
   obj.nn.cadidate := ListBox1.Items;
 end;
 

@@ -867,7 +867,7 @@ var
   j: integer;
 begin
   convert(item);
-  for i := 0 to numHidden - 1 do
+  for i := 1 to numHidden - 1 do
   begin
     xsum := u[0, i];
     for j := 1 to numInput - 1 do

@@ -63,7 +63,7 @@ type
     zu: array [0 .. TMAX_PARAM.MAX_KIND - 1] of Single;
     teachLabels: array [0 .. TMAX_PARAM.MAX_OUTPUT - 1] of string;
     data: array of TModel;
-    numEntry: integer;
+    batch: integer;
     procedure convert(test: TModel); overload;
     procedure convert(tests: array of TModel); overload;
   public
@@ -72,7 +72,7 @@ type
     cadidate: TStrings;
     constructor Create;
     procedure recogNN(item: TModel);
-    procedure learnBP3(tests: array of TModel; numEntry, numRepeat: integer);
+    procedure learnBP3(tests: array of TModel; numRepeat: integer);
   end;
 
   TFourier = class
@@ -399,18 +399,18 @@ end;
 
 procedure TFourier.learn(numRepeat: integer);
 begin
-  nn.learnBP3(FModels,numEntry,numRepeat);
+  nn.learnBP3(FModels, numRepeat);
 end;
 
 procedure TFourier.letters;
 var
   i: integer;
 begin
-  for i := 0 to numRect - 1 do
-    model[i].name := Chr(Ord('a') + i);
   nn.data := @FModels;
-  nn.numEntry := numRect;
+  nn.batch := numRect;
   nn.numOutput := 26;
+  for i := 0 to nn.numOutput - 1 do
+    nn.teachLabels[i] := Chr(Ord('a') + i);
 end;
 
 procedure TFourier.loadModels(filename: string);
@@ -453,20 +453,14 @@ end;
 
 procedure TFourier.numbers;
 var
-  i, j: integer;
+  i: integer;
 begin
-  j := 0;
-  for i := 0 to numRect - 1 do
-  begin
-    if j > 9 then
-      j := 0;
-    model[i].name := j.ToString;
-    inc(j);
-  end;
   nn.data := @FModels;
-  nn.numEntry := numRect;
+  nn.batch := numEntry;
   numDescriptor := 8;
   nn.numOutput := 10;
+  for i := 0 to nn.numOutput-1 do
+    nn.teachLabels[i]:=i.ToString;
 end;
 
 procedure TFourier.preProcess;
@@ -749,7 +743,7 @@ procedure TNueralNet.convert(test: TModel);
 var
   i: integer;
 begin
-  for i := 0 to test.numDescriptor - 1 do
+  for i := 1 to test.numDescriptor do
   begin
     xu[1 + 2 * (i - 1)] := test.coReal1[i] * test.coReal1[i] + test.coImag1[i] *
       test.coImag1[i];
@@ -763,8 +757,9 @@ var
   i: integer;
   j: integer;
 begin
-  for i := 0 to numEntry - 1 do
-    for j := 0 to tests[i].numDescriptor - 1 do
+  numInput:=2*(tests[0].numDescriptor+1);
+  for i := 0 to batch - 1 do
+    for j := 1 to tests[i].numDescriptor do
     begin
       XX[1 + 2 * (j - 1), i] := tests[i].coReal1[j] * tests[i].coReal1[j] +
         tests[i].coImag1[j] * tests[i].coImag1[i];
@@ -780,7 +775,7 @@ begin
   numHidden := 8;
 end;
 
-procedure TNueralNet.learnBP3(tests: array of TModel; numEntry, numRepeat: integer);
+procedure TNueralNet.learnBP3(tests: array of TModel; numRepeat: integer);
 var
   i: integer;
   yy: array [0 .. TMAX_PARAM.MAX_INPUT, 0 .. TMAX_PARAM.MAX_ENTRY] of Single;
@@ -795,9 +790,8 @@ var
   k: integer;
   sumX, sumY, ss: Single;
 begin
-  Self.numEntry:=numEntry;
   convert(tests);
-  for i := 0 to numEntry - 1 do
+  for i := 0 to batch - 1 do
     for j := 0 to numOutput - 1 do
       if teachLabels[j] = data[i].name then
         teacher[j, i] := 1.0
@@ -815,18 +809,11 @@ begin
     for i := 0 to numHidden - 1 do
       v[i, j] := 2 * (Random - 0.5);
   end;
-  for i := 0 to numEntry - 1 do
-  begin
-    XX[0, i] := 1;
-    yy[0, i] := 1;
-    for j := 1 to numHidden - 1 do
-      yy[j, i] := 0;
-  end;
   cnt := 0;
   while cnt <= numRepeat do
   begin
     for i := 1 to numHidden - 1 do
-      for j := 0 to numEntry - 1 do
+      for j := 0 to batch - 1 do
       begin
         sumX := 0;
         for k := 0 to numInput - 1 do
@@ -835,7 +822,7 @@ begin
       end;
     for i := 0 to numOutput - 1 do
     begin
-      for j := 0 to numEntry - 1 do
+      for j := 0 to batch - 1 do
       begin
         sumY := 0;
         for k := 1 to numHidden - 1 do
@@ -844,12 +831,12 @@ begin
         delta[i, j] := (teacher[i, j] - zz[i, j]) * zz[i, j] * (1 - zz[i, j]);
       end;
       for j := 0 to numHidden - 1 do
-        for k := 0 to numEntry - 1 do
+        for k := 0 to batch - 1 do
           v[j, i] := eta * delta[i, k] * yy[j, k];
     end;
     for i := 1 to numHidden - 1 do
     begin
-      for k := 0 to numEntry - 1 do
+      for k := 0 to batch - 1 do
       begin
         ss := 0;
         for j := 0 to numOutput - 1 do
@@ -857,7 +844,7 @@ begin
         sigma[k] := ss * yy[i, k] * (1 - yy[i, k]);
       end;
       for j := 0 to numInput - 1 do
-        for k := 0 to numEntry - 1 do
+        for k := 0 to batch - 1 do
           u[j, i] := eta * sigma[k] * XX[j, k];
     end;
     inc(cnt);

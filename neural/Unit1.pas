@@ -114,7 +114,7 @@ procedure TForm1.Image2MouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Single);
 begin
   recg.select(X, Y);
-  recg.nn.recogNN(recg.model[recg.rIndex]);
+  obj.nn.recogNN(recg.model[recg.rIndex]);
 end;
 
 procedure TForm1.ToolbarCloseButtonClick(Sender: TObject);

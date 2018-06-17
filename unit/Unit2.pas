@@ -459,8 +459,8 @@ begin
   nn.batch := numEntry;
   numDescriptor := 8;
   nn.numOutput := 10;
-  for i := 0 to nn.numOutput-1 do
-    nn.teachLabels[i]:=i.ToString;
+  for i := 0 to nn.numOutput - 1 do
+    nn.teachLabels[i] := i.ToString;
 end;
 
 procedure TFourier.preProcess;
@@ -757,7 +757,7 @@ var
   i: integer;
   j: integer;
 begin
-  numInput:=2*(tests[0].numDescriptor+1);
+  numInput := 2 * (tests[0].numDescriptor + 1);
   for i := 0 to batch - 1 do
     for j := 1 to tests[i].numDescriptor do
     begin
@@ -797,6 +797,13 @@ begin
         teacher[j, i] := 1.0
       else
         teacher[j, i] := 0;
+  for i := 0 to batch-1 do
+  begin
+    xx[0,i]:=1;
+    yy[0,i]:=1;
+    for j := 1 to numHidden-1 do
+      yy[j,i]:=0;
+  end;
   for j := 0 to numHidden - 1 do
   begin
     Randomize;
@@ -825,14 +832,14 @@ begin
       for j := 0 to batch - 1 do
       begin
         sumY := 0;
-        for k := 1 to numHidden - 1 do
+        for k := 0 to numHidden - 1 do
           sumY := sumY + v[k, i] * yy[k, j];
         zz[i, j] := 1 / (1 + EXP(-sumY));
         delta[i, j] := (teacher[i, j] - zz[i, j]) * zz[i, j] * (1 - zz[i, j]);
       end;
       for j := 0 to numHidden - 1 do
         for k := 0 to batch - 1 do
-          v[j, i] := eta * delta[i, k] * yy[j, k];
+          v[j, i] := v[j, i] + eta * delta[i, k] * yy[j, k];
     end;
     for i := 1 to numHidden - 1 do
     begin
@@ -845,7 +852,7 @@ begin
       end;
       for j := 0 to numInput - 1 do
         for k := 0 to batch - 1 do
-          u[j, i] := eta * sigma[k] * XX[j, k];
+          u[j, i] := u[j, i] + eta * sigma[k] * XX[j, k];
     end;
     inc(cnt);
   end;
@@ -884,7 +891,7 @@ begin
       if max < zu[i] then
       begin
         max := zu[i];
-        cadidate[0] := data[i].name;
+        cadidate[0] := teachLabels[i];
         cadidate.Objects[0] := Pointer(i);
       end;
     max := -1;
@@ -892,7 +899,7 @@ begin
       if (max < zu[i]) and (i <> integer(cadidate.Objects[0])) then
       begin
         max := zu[i];
-        cadidate[1] := data[i].name;
+        cadidate[1] := teachLabels[i];
         cadidate.Objects[1] := Pointer(i);
       end;
     max := -1;
@@ -901,7 +908,7 @@ begin
         (i <> integer(cadidate.Objects[1])) then
       begin
         max := zu[i];
-        cadidate[2] := data[i].name;
+        cadidate[2] := teachLabels[i];
       end;
   end;
 end;

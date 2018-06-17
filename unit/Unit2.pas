@@ -757,7 +757,7 @@ var
   i: integer;
   j: integer;
 begin
-  numInput := 2 * (tests[0].numDescriptor + 1);
+  numInput := 2 * tests[0].numDescriptor + 1;
   for i := 0 to batch - 1 do
     for j := 1 to tests[i].numDescriptor do
     begin
@@ -870,14 +870,14 @@ begin
   for i := 0 to numHidden - 1 do
   begin
     xsum := u[0, i];
-    for j := 0 to numInput - 1 do
+    for j := 1 to numInput - 1 do
       xsum := xsum + u[j, i] * xu[j];
     yu[i] := 1 / (1 + EXP(-xsum));
   end;
   for i := 0 to numOutput - 1 do
   begin
     ysum := v[0, i];
-    for j := 0 to numHidden - 1 do
+    for j := 1 to numHidden - 1 do
       ysum := ysum + v[j, i] * yu[j];
     zu[i] := 1 / (1 + EXP(-ysum));
   end;

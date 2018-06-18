@@ -416,7 +416,7 @@ end;
 procedure TFourier.loadModels(filename: string);
 var
   f: TFileStream;
-  i: integer;
+  i,j: integer;
   u: Byte;
 begin
   if FileExists(filename) = false then
@@ -430,13 +430,15 @@ begin
       f.ReadBuffer(u, 1);
       f.Read((@FModels[i].name)^, u * SizeOf(WideChar));
       f.ReadBuffer(numDescriptor, 1);
-      f.Read(FModels[i].FReal1, SizeOf(FModels[i].FReal1));
-      f.Read(FModels[i].FImag1, SizeOf(FModels[i].FImag1));
-      f.Read(FModels[i].FReal2, SizeOf(FModels[i].FReal2));
-      f.Read(FModels[i].FImag2, SizeOf(FModels[i].FImag2));
-      f.Read(FBoundary[i].X, SizeOf(FBoundary[i].X));
-      f.Read(FBoundary[i].Y, SizeOf(FBoundary[i].Y));
+      j:=numDescriptor*SIzeOf(Single);
+      f.Read(FModels[i].FReal1, j);
+      f.Read(FModels[i].FImag1, j);
+      f.Read(FModels[i].FReal2, j);
+      f.Read(FModels[i].FImag2, j);
       f.ReadBuffer(FBoundary[i].Count, SizeOf(LongInt));
+      j:=FBoundary[i].Count*SizeOf(Single);
+      f.Read(FBoundary[i].X, j);
+      f.Read(FBoundary[i].Y, j);
     end;
   finally
     f.Free;
@@ -510,7 +512,7 @@ end;
 procedure TFourier.saveModels(filename: string);
 var
   f: TFileStream;
-  i: integer;
+  i, j: integer;
   u: Byte;
 begin
   f := TFileStream.Create(filename, fmOpenWrite or fmCreate);
@@ -522,13 +524,15 @@ begin
       f.WriteBuffer(u, 1);
       f.Write((@FModels[i].name)^, u * SizeOf(WideChar));
       f.Write(numDescriptor, 1);
-      f.Write(FModels[i].FReal1, SizeOf(FModels[i].FReal1));
-      f.Write(FModels[i].FImag1, SizeOf(FModels[i].FImag1));
-      f.Write(FModels[i].FReal2, SizeOf(FModels[i].FReal2));
-      f.Write(FModels[i].FImag2, SizeOf(FModels[i].FImag2));
-      f.Write(FBoundary[i].X, SizeOf(FBoundary[i].X));
-      f.Write(FBoundary[i].Y, SizeOf(FBoundary[i].Y));
+      j:=numDescriptor*SizeOf(Single);
+      f.Write(FModels[i].FReal1, j);
+      f.Write(FModels[i].FImag1, j);
+      f.Write(FModels[i].FReal2, j);
+      f.Write(FModels[i].FImag2, j);
       f.WriteBuffer(FBoundary[i].Count, SizeOf(LongInt));
+      j:=FBoundary[i].Count*SizeOf(Single);
+      f.Write(FBoundary[i].X, j);
+      f.Write(FBoundary[i].Y, j);
     end;
   finally
     f.Free;
